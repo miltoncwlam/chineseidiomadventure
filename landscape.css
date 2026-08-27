@@ -555,14 +555,35 @@ textarea {
 .ling-model.stage-5 .ling-cloud,
 .ling-model.stage-5 .ling-halo { opacity: 1; }
 
-.ling-model.is-gold {
-  box-shadow: 0 0 0 3px var(--color-gold), 0 10px 22px color-mix(in srgb, var(--color-gold) 35%, transparent);
-  border-radius: 1.2rem;
+.ling-model.is-gold .ling-body {
+  background: linear-gradient(160deg, #f6e27a, #d39a34 55%, #8a5a18);
+  box-shadow:
+    inset 0 -8px 12px color-mix(in srgb, #5c3a0c 28%, transparent),
+    0 0 0 3px #f0d36a,
+    0 0 18px color-mix(in srgb, var(--color-gold) 55%, transparent);
+}
+
+.ling-model.is-gold .ling-peak {
+  opacity: 1;
+  border-bottom-color: #e8c15a;
+}
+
+.ling-model.is-gold .ling-halo {
+  opacity: 1;
+  border-color: #f0d36a;
+  border-style: solid;
+}
+
+.ling-model.is-gold .ling-sprout {
+  background: #d4a017;
 }
 
 .ling-model.is-sleeping {
-  opacity: .45;
-  filter: grayscale(.55) brightness(.85);
+  opacity: .78;
+}
+
+.ling-model.is-sleeping .ling-body {
+  filter: brightness(.82);
 }
 
 .ling-model.is-sleeping .ling-eye {
@@ -633,6 +654,19 @@ textarea {
 
 .shop-row:not(:disabled):hover {
   border-color: var(--color-accent);
+}
+
+.shop-row.is-owned-gold {
+  opacity: 1;
+  cursor: default;
+  border-color: var(--color-gold);
+  background: color-mix(in srgb, var(--color-gold) 18%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-gold) 45%, transparent);
+}
+
+.shop-row.is-owned-gold:disabled {
+  opacity: 1;
+  cursor: default;
 }
 
 .site-legal-footer {

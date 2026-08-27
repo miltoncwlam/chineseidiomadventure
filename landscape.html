@@ -309,11 +309,11 @@
             </button>
           </div>
         </div>
-        <button type="button" @click="buyGoldBorder" :disabled="examInProgress || goldBorder || coins < 60" class="shop-row mt-4 w-full rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
-          <p>{{ goldBorder ? '已解鎖：金色山邊' : '金色山邊 · 60' }}</p>
-          <p class="text-xs font-medium text-[var(--color-muted)] mt-1">一次性外觀，不影響答題與掌握進度。</p>
+        <button type="button" @click="buyGoldBorder" :disabled="examInProgress || (!goldBorder && coins < 60)" :class="goldBorder ? 'shop-row is-owned-gold' : 'shop-row'" class="mt-4 w-full rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
+          <p>{{ goldBorder ? '已裝備：金色山邊' : '金色山邊 · 60' }}</p>
+          <p class="text-xs font-medium text-[var(--color-muted)] mt-1">{{ goldBorder ? '小山靈已換上金色山邊。外觀不影響答題與掌握進度。' : '一次性外觀，不影響答題與掌握進度。' }}</p>
         </button>
-        <p className="text-xs text-[var(--color-muted)] mt-5">已掌握 {{ masteredBoardWordIds.length }} / {{ bank.length }} 個成語。連勝與掌握只來自自己找出或答對。</p>
+        <p class="text-xs text-[var(--color-muted)] mt-5">已掌握 {{ masteredBoardWordIds.length }} / {{ bank.length }} 個成語。連勝與掌握只來自自己找出或答對。</p>
       </section>
     </main>
 
