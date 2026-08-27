@@ -1,0 +1,118 @@
+window.CHENG_YU = {
+  supabaseUrl: 'https://ngukhgymeveuttokeavp.supabase.co',
+  supabasePublishableKey: 'sb_publishable_0bY4LAevhSVPjB9t6tcYhw_ZjuEk5vm',
+  clerkPublishableKey: 'pk_test_ZWFnZXItY2hpbXAtNTg5NS5jbGVyay5hY2NvdW50cy5kZXYk'
+};
+
+// Replace the three strings above with values from YOUR dashboards.
+// supabaseUrl            → Project Settings → API → Project URL
+// supabasePublishableKey → sb_publishable_… (not the legacy anon JWT, not service_role)
+// clerkPublishableKey    → Clerk Dashboard → pk_test_… or pk_live_… (optional)
+// Placeholders are ignored; the game still runs with local text and localStorage.
+
+window.loadChengYuClerk = async function loadChengYuClerk() {
+  const key = String((window.CHENG_YU && window.CHENG_YU.clerkPublishableKey) || '').trim();
+  if (!key || key.includes('REPLACE') || !key.startsWith('pk_')) return null;
+  if (window.__chengYuClerkReady && window.Clerk && window.Clerk.load) return window.Clerk;
+
+  let domain = '';
+  try {
+    domain = atob(key.split('_').slice(2).join('_')).replace(/[\$=]+$/g, '');
+  } catch (error) {
+    console.warn('Clerk publishable key could not be decoded.');
+    return null;
+  }
+
+  function loadScript(src, attrs) {
+    return new Promise(function (resolve, reject) {
+      const found = document.querySelector('script[data-chengyu-src="' + src + '"]');
+      if (found) {
+        if (found.dataset.chengyuLoaded === '1') return resolve();
+        found.addEventListener('load', resolve);
+        found.addEventListener('error', function () { reject(new Error('Failed to load Clerk script')); });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      script.setAttribute('data-chengyu-src', src);
+      if (attrs) Object.keys(attrs).forEach(function (name) { script.setAttribute(name, attrs[name]); });
+      script.onload = function () { script.dataset.chengyuLoaded = '1'; resolve(); };
+      script.onerror = function () { reject(new Error('Failed to load Clerk script')); };
+      document.head.appendChild(script);
+    });
+  }
+
+  await loadScript('https://' + domain + '/npm/@clerk/ui@1/dist/ui.browser.js');
+  await loadScript('https://' + domain + '/npm/@clerk/clerk-js@5/dist/clerk.browser.js', {
+    'data-clerk-publishable-key': key
+  });
+
+  const ClerkCtor = window.Clerk;
+  const clerk = typeof ClerkCtor === 'function' ? new ClerkCtor(key) : ClerkCtor;
+  if (!clerk || typeof clerk.load !== 'function') throw new Error('Clerk SDK did not initialize');
+  const options = {
+    publishableKey: key,
+    allowedRedirectOrigins: [
+      location.origin,
+      'http://localhost:3002',
+      'http://127.0.0.1:3002',
+      'https://chineseidiom.oneapp.dev',
+      'https://chengyu-tansuo.vercel.app'
+    ]
+  };
+  if (window.__internal_ClerkUICtor) options.ui = { ClerkUI: window.__internal_ClerkUICtor };
+  await clerk.load(options);
+  window.Clerk = clerk;
+  window.__chengYuClerkReady = true;
+  return clerk;
+};
+
+window.closeChengYuSignIn = function closeChengYuSignIn() {
+  const host = document.getElementById('clerk-host');
+  const panel = document.getElementById('clerk-panel');
+  if (window.Clerk && panel && typeof window.Clerk.unmountSignIn === 'function') {
+    try { window.Clerk.unmountSignIn(panel); } catch (error) { /* ignore */ }
+  }
+  if (host) host.remove();
+};
+
+window.openChengYuSignIn = async function openChengYuSignIn() {
+  try {
+    const clerk = (window.__chengYuClerkReady && window.Clerk) || await window.loadChengYuClerk();
+    if (!clerk) throw new Error('Clerk is not configured');
+    if (clerk.user) return true;
+    window.closeChengYuSignIn();
+    const host = document.createElement('div');
+    host.id = 'clerk-host';
+    host.setAttribute('role', 'dialog');
+    host.setAttribute('aria-modal', 'true');
+    host.innerHTML = '<div class="clerk-sheet"><button type="button" class="clerk-close">關閉</button><div id="clerk-panel"><p class="clerk-loading">載入登入中…</p></div></div>';
+    document.body.appendChild(host);
+    host.querySelector('.clerk-close').addEventListener('click', window.closeChengYuSignIn);
+    host.addEventListener('click', function (event) {
+      if (event.target === host) window.closeChengYuSignIn();
+    });
+    await new Promise(function (resolve) { requestAnimationFrame(function () { setTimeout(resolve, 50); }); });
+    clerk.mountSignIn(document.getElementById('clerk-panel'));
+    if (clerk.addListener) {
+      clerk.addListener(function (state) {
+        if (state && state.user) window.closeChengYuSignIn();
+      });
+    }
+    return true;
+  } catch (error) {
+    console.warn('Clerk sign-in could not open.', error);
+    window.closeChengYuSignIn();
+    const host = document.createElement('div');
+    host.id = 'clerk-host';
+    host.innerHTML = '<div class="clerk-sheet"><button type="button" class="clerk-close">關閉</button><p style="padding:1rem;font-weight:700;line-height:1.6;">登入未能載入。請用瀏覽器打開 http://localhost:3002/ 再試一次。</p></div>';
+    document.body.appendChild(host);
+    host.querySelector('.clerk-close').addEventListener('click', window.closeChengYuSignIn);
+    host.addEventListener('click', function (event) {
+      if (event.target === host) window.closeChengYuSignIn();
+    });
+    return false;
+  }
+};

@@ -1,0 +1,636 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+:root {
+  --color-primary: #4f8f78;
+  --color-primary-contrast: #ffffff;
+  --color-bg: #eef5ef;
+  --color-surface: #ffffff;
+  --color-text: #263b35;
+  --color-muted: #6d8278;
+  --color-accent: #4b9fba;
+  --color-gold: #a9783d;
+  --color-danger: #c96767;
+  --color-success: #4d9a68;
+  --font-heading: "Noto Sans TC", system-ui, sans-serif;
+  --font-body: "Noto Sans TC", system-ui, sans-serif;
+  --radius: 1rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 34%),
+    radial-gradient(circle at 90% 15%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 36%),
+    var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  touch-action: manipulation;
+}
+
+.game-shell {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
+}
+
+#app {
+  overflow-x: hidden;
+}
+
+.auth-login-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 0.65rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 900;
+}
+
+.auth-login-btn.is-out {
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  color: var(--color-text);
+  border: 1px solid color-mix(in srgb, var(--color-muted) 24%, transparent);
+}
+
+#clerk-host {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(22, 53, 47, 0.55);
+}
+
+#clerk-host .clerk-sheet {
+  width: min(420px, 100%);
+  max-height: min(92dvh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 1.25rem;
+  padding: 0.75rem 0.75rem 1rem;
+  box-shadow: 0 1.5rem 4rem rgba(22, 53, 47, 0.22);
+}
+
+#clerk-host .clerk-close {
+  display: block;
+  margin: 0 0 0.5rem auto;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+#clerk-panel {
+  min-height: 280px;
+}
+
+#clerk-panel .clerk-loading {
+  margin: 2rem 0;
+  text-align: center;
+  font-weight: 800;
+  color: var(--color-muted);
+}
+
+.hud-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.hud-stats > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.hud-stats .hud-wide,
+.puzzle-meta .hud-wide {
+  grid-column: 1 / -1;
+}
+
+.game-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 0.35rem 0 0.5rem;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.game-tabs button {
+  width: 100%;
+}
+
+.puzzle-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.puzzle-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.puzzle-meta > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .game-shell {
+    padding: 0.75rem;
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .hud-stats,
+  .game-tabs,
+  .puzzle-actions,
+  .puzzle-meta {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .hud-stats {
+    width: auto;
+  }
+
+  .game-tabs {
+    position: static;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .game-tabs button {
+    width: auto;
+  }
+
+  .puzzle-actions,
+  .puzzle-meta {
+    width: auto;
+    justify-content: center;
+  }
+
+  .hud-stats .hud-wide,
+  .puzzle-meta .hud-wide {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .game-shell {
+    padding: 2rem;
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  }
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.card {
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-muted) 24%, transparent);
+}
+
+.puzzle-grid {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tile {
+  aspect-ratio: 1;
+  font-size: clamp(0.95rem, 4.6vw, 2.25rem);
+  transition: transform .14s, opacity .2s, background .14s;
+}
+
+.puzzle-grid .tile.selected {
+  transform: scale(1.08);
+  background: color-mix(in srgb, var(--color-success) 28%, var(--color-surface));
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.puzzle-grid .tile.cleared {
+  opacity: 1;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-success) 28%, var(--color-surface));
+  border-color: var(--color-success);
+  color: var(--color-success);
+  transform: none;
+}
+
+.puzzle-grid .tile.answer-highlight {
+  opacity: 1 !important;
+  background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.puzzle-grid .tile.answer-found {
+  opacity: 1 !important;
+  background: color-mix(in srgb, var(--color-success) 28%, var(--color-surface));
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+/* The learning card deliberately uses a fixed panel instead of a 3D transform.
+   This keeps the front and back at exactly the same document position. */
+.flip-card {
+  --card-h: min(52dvh, 420px);
+  position: relative;
+  width: min(100%, 390px);
+  height: var(--card-h);
+  min-height: var(--card-h);
+  margin: 0 auto;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: var(--card-h);
+  min-height: var(--card-h);
+}
+
+.flip-card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: var(--card-h);
+  min-height: var(--card-h);
+  max-height: var(--card-h);
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+}
+
+.flip-card-back {
+  display: none;
+  transform: none;
+  overflow-y: auto;
+}
+
+.flip-card.is-flipped .flip-card-front {
+  display: none;
+}
+
+.flip-card.is-flipped .flip-card-back {
+  display: block;
+}
+
+.flashcard-shell {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(155deg, color-mix(in srgb, #dcefe1 92%, var(--color-surface)), color-mix(in srgb, #e7f3f6 88%, var(--color-surface))),
+    linear-gradient(25deg, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 42%);
+  border: 2px solid color-mix(in srgb, var(--color-gold) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 15%, transparent), 0 18px 45px color-mix(in srgb, #557066 18%, transparent);
+}
+
+.flashcard-shell>* {
+  position: relative;
+  z-index: 1;
+}
+
+.flashcard-vertical {
+  width: min(100%, 390px);
+  height: var(--card-h);
+  min-height: var(--card-h);
+  margin: 0 auto;
+}
+
+.syllabus-word {
+  position: relative;
+  transition: opacity .2s, filter .2s, transform .2s;
+}
+
+.syllabus-word.is-found {
+  opacity: .48;
+  filter: grayscale(1);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.syllabus-word.is-found::after {
+  content: "✓";
+  color: var(--color-success);
+  margin-left: .35rem;
+  text-decoration: none;
+}
+
+.puzzle-layout {
+  display: grid;
+  grid-template-columns: minmax(120px, 170px) minmax(0, 1fr) minmax(120px, 170px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.syllabus-side-list {
+  display: grid;
+  gap: .45rem;
+}
+
+.syllabus-side-list .syllabus-word {
+  background: transparent;
+  border: 0;
+  padding: .2rem .1rem;
+  color: var(--color-muted);
+  font-size: .82rem;
+}
+
+.syllabus-side-list .syllabus-word.is-found {
+  color: var(--color-success);
+}
+
+.flashcard-index-grid button {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.review-item {
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-muted) 24%, transparent);
+}
+
+.review-item.is-correct {
+  border-color: color-mix(in srgb, var(--color-success) 55%, transparent);
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
+}
+
+.review-item.is-wrong {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+}
+
+@media (min-width: 640px) {
+  .flip-card,
+  .flashcard-vertical {
+    --card-h: 560px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .puzzle-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .puzzle-layout>.syllabus-left,
+  .puzzle-layout>.syllabus-right {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .puzzle-actions button {
+    font-size: 0.8rem;
+  }
+
+  .puzzle-grid {
+    padding: 0.5rem;
+  }
+
+  .puzzle-grid .grid {
+    gap: 0.3rem;
+  }
+
+  .flashcard-index-grid button {
+    min-height: 4.5rem;
+  }
+}
+
+.puzzle-grid .tile.is-decoy {
+  opacity: .35;
+  filter: saturate(.4);
+}
+
+.ling-model {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ling-model.is-hud {
+  width: 3.15rem;
+  height: 3.15rem;
+}
+
+.ling-model.is-stage {
+  width: 9.5rem;
+  height: 9.5rem;
+}
+
+.ling-model > span {
+  position: absolute;
+}
+
+.ling-shadow {
+  bottom: 8%;
+  width: 58%;
+  height: 12%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+.ling-body {
+  width: 54%;
+  height: 54%;
+  border-radius: 46% 46% 42% 42%;
+  background: linear-gradient(160deg, #8fce9a, var(--color-primary));
+  box-shadow: inset 0 -8px 12px color-mix(in srgb, #16352f 18%, transparent);
+  animation: ling-bob 2.8s ease-in-out infinite;
+}
+
+.ling-sprout,
+.ling-peak,
+.ling-cloud,
+.ling-halo {
+  opacity: 0;
+}
+
+.ling-sprout {
+  top: 10%;
+  width: 10%;
+  height: 22%;
+  background: #3d8f55;
+  border-radius: 4px 4px 0 0;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.ling-peak {
+  top: 6%;
+  width: 0;
+  height: 0;
+  border-left: 0.7em solid transparent;
+  border-right: 0.7em solid transparent;
+  border-bottom: 1.1em solid #3d6b58;
+}
+
+.ling-cloud {
+  top: 4%;
+  width: 42%;
+  height: 16%;
+  border-radius: 999px;
+  background: #eef7f4;
+}
+
+.ling-halo {
+  inset: 6%;
+  border-radius: 50%;
+  border: 2px dashed color-mix(in srgb, var(--color-gold) 70%, transparent);
+}
+
+.ling-eye {
+  width: 8%;
+  height: 8%;
+  border-radius: 50%;
+  background: #16352f;
+  top: 42%;
+}
+
+.ling-eye.left { left: 34%; }
+.ling-eye.right { right: 34%; }
+
+.ling-model.stage-1 .ling-body {
+  width: 38%;
+  height: 38%;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #c9e4b4, #7aa86a);
+}
+
+.ling-model.stage-2 .ling-sprout { opacity: 1; }
+
+.ling-model.stage-3 .ling-sprout,
+.ling-model.stage-3 .ling-peak { opacity: 1; }
+
+.ling-model.stage-4 .ling-peak { opacity: 1; }
+.ling-model.stage-4 .ling-body {
+  width: 62%;
+  height: 58%;
+}
+
+.ling-model.stage-5 .ling-peak,
+.ling-model.stage-5 .ling-cloud,
+.ling-model.stage-5 .ling-halo { opacity: 1; }
+
+.ling-model.is-gold {
+  box-shadow: 0 0 0 3px var(--color-gold), 0 10px 22px color-mix(in srgb, var(--color-gold) 35%, transparent);
+  border-radius: 1.2rem;
+}
+
+.ling-model.is-sleeping {
+  opacity: .45;
+  filter: grayscale(.55) brightness(.85);
+}
+
+.ling-model.is-sleeping .ling-eye {
+  height: 3%;
+  border-radius: 40%;
+}
+
+.ling-model.is-feeding .ling-body {
+  animation: ling-chew .45s ease-in-out 2;
+}
+
+.ling-model.is-evolving {
+  animation: ling-spurt 1.2s ease;
+}
+
+.ling-spark {
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-gold) 35%, transparent);
+  animation: ling-spark 1.2s ease;
+}
+
+@keyframes ling-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6%); }
+}
+
+@keyframes ling-chew {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08, 0.92); }
+}
+
+@keyframes ling-spurt {
+  0% { transform: scale(0.86); }
+  40% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ling-spark {
+  0% { opacity: .9; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+.meter-row {
+  display: flex;
+  gap: .35rem;
+}
+
+.meter-pip {
+  flex: 1;
+  height: .55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-muted) 22%, var(--color-surface));
+}
+
+.meter-pip.is-on {
+  background: var(--color-primary);
+}
+
+.meter-pip.mood.is-on {
+  background: var(--color-gold);
+}
+
+.shop-row {
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-muted) 24%, transparent);
+}
+
+.shop-row:not(:disabled):hover {
+  border-color: var(--color-accent);
+}

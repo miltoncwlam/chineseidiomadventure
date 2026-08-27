@@ -1,0 +1,147 @@
+:root {
+  --color-primary: #176b5b;
+  --color-primary-contrast: #f7fff8;
+  --color-bg: #eef7f0;
+  --color-surface: #ffffff;
+  --color-text: #16352f;
+  --color-muted: #658078;
+  --color-accent: #d8843b;
+  --color-gold: #d39a34;
+  --color-success: #2d8a5f;
+  --color-danger: #c65b55;
+  --font-heading: Georgia, 'Noto Serif TC', serif;
+  --font-body: 'Noto Sans TC', 'PingFang TC', system-ui, sans-serif;
+  --radius: 1.25rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at 8% 8%, rgba(216, 132, 59, 0.14), transparent 28rem),
+    radial-gradient(circle at 92% 12%, rgba(23, 107, 91, 0.14), transparent 30rem),
+    var(--color-bg);
+  font-family: var(--font-body);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem);
+}
+
+.page-wrap {
+  overflow-x: hidden;
+}
+
+#clerk-host {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(22, 53, 47, 0.55);
+}
+
+#clerk-host .clerk-sheet {
+  width: min(420px, 100%);
+  max-height: min(92dvh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 1.25rem;
+  padding: 0.75rem 0.75rem 1rem;
+  box-shadow: 0 1.5rem 4rem rgba(22, 53, 47, 0.22);
+}
+
+#clerk-host .clerk-close {
+  display: block;
+  margin: 0 0 0.5rem auto;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+#clerk-panel {
+  min-height: 280px;
+}
+
+#clerk-panel .clerk-loading {
+  margin: 2rem 0;
+  text-align: center;
+  font-weight: 800;
+  color: var(--color-muted);
+}
+
+.hub-hero-art {
+  overflow: hidden;
+}
+
+@media (max-width: 639px) {
+  .game-card:hover {
+    transform: none;
+  }
+
+  .orbit {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.65rem;
+  }
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.glass {
+  border: 1px solid rgba(23, 107, 91, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 1.5rem 4rem rgba(22, 53, 47, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.pattern-lines {
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.08) 75%, transparent 75%);
+  background-size: 1.75rem 1.75rem;
+}
+
+.game-card {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.game-card:hover {
+  transform: translateY(-0.35rem);
+  box-shadow: 0 1.25rem 2.5rem rgba(22, 53, 47, 0.14);
+  border-color: rgba(216, 132, 59, 0.5);
+}
+
+.coming-card {
+  opacity: 0.78;
+}
+
+.orbit {
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-0.6rem);
+  }
+}

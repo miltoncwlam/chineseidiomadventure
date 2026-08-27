@@ -1,0 +1,1606 @@
+<!doctype html>
+<!-- 成語探險 · 山水風光. Hub is index.html. Flat files for OneCompiler (no folders). -->
+<html lang="zh-HK">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>成語探險</title>
+  <link rel="stylesheet" href="landscape.css">
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+
+<body class="game-shell">
+  <div id="app" class="max-w-6xl mx-auto">
+    <header class="glass rounded-[var(--radius)] p-3 sm:p-5 mb-4 sm:mb-5">
+      <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div class="ling-model is-hud" :class="['stage-' + petStage, petSleeping ? 'is-sleeping' : '', goldBorder ? 'is-gold' : '', evolving ? 'is-evolving' : '', feedingAnim ? 'is-feeding' : '']" aria-hidden="true">
+          <span class="ling-shadow"></span>
+          <span class="ling-halo"></span>
+          <span class="ling-body"></span>
+          <span class="ling-sprout"></span>
+          <span class="ling-peak"></span>
+          <span class="ling-cloud"></span>
+          <span class="ling-eye left"></span>
+          <span class="ling-eye right"></span>
+          <span v-if="evolving" class="ling-spark"></span>
+        </div>
+        <div class="min-w-0">
+          <a href="index.html" class="text-xs font-bold text-[var(--color-accent)]">← 返回成語探險</a>
+          <h1 class="text-base sm:text-xl md:text-2xl font-black leading-tight"><span class="sm:hidden">山水風光</span><span class="hidden sm:inline">成語探險 —— 山水風光</span></h1>
+          <p class="text-xs text-[var(--color-muted)]">{{ petStageLabel }} · 第 {{ careDays }} 天照顧</p>
+        </div>
+      </div>
+      <button type="button" v-if="!signedIn" class="auth-login-btn" @click="openSignIn">登入</button>
+      <button type="button" v-else class="auth-login-btn is-out" @click="signOut">登出 {{ clerkName }}</button>
+      <div class="hud-stats mt-3">
+        <span class="card rounded-lg px-2 py-2 text-xs sm:text-sm">金幣 {{ coins }}</span>
+        <span class="card rounded-lg px-2 py-2 text-xs sm:text-sm">連勝 {{ streak }}</span>
+        <span class="card rounded-lg px-2 py-2 text-xs">飽食 {{ hunger }}/5</span>
+        <span class="card rounded-lg px-2 py-2 text-xs">心情 {{ mood }}/5</span>
+        <span v-if="gameStarted && !timeExpired && !boardCompleted" class="hud-wide card rounded-lg px-2 py-2 text-xs">連消 {{ timerText }}{{ timerPaused ? ' · 暫停' : '' }}</span>
+      </div>
+    </header>
+
+    <nav class="game-tabs mb-4 sm:mb-5">
+        <button v-for="tab in tabs" :key="tab.id" @click="setTab(tab.id)" :class="activeTab === tab.id ? 'bg-[var(--color-primary)] text-[var(--color-primary-contrast)]' : 'card text-[var(--color-muted)]'" class="rounded-[var(--radius)] min-h-11 px-3 py-2.5 text-sm font-bold transition sm:px-4 sm:text-base">{{ tab.label }}</button>
+    </nav>
+
+    <main>
+      <section v-if="activeTab === 'riddle'" class="space-y-5">
+        <div class="glass rounded-[var(--radius)] p-4 sm:p-6 md:p-8">
+          <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+            <div>
+              <span class="text-xs font-bold text-[var(--color-accent)]">山水風光閃卡 · TAP TO FLIP</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-black mt-1">閃卡學習：先看成語，再查看解釋</h2>
+              <p class="text-sm text-[var(--color-muted)] mt-2">點擊卡片翻面。正面顯示成語與拼音，背面提供中文釋義、進階英文翻譯及中文例句。</p>
+            </div>
+            <span class="card rounded-full px-3 py-1 text-xs font-bold">{{ flashcardIndex + 1 }} / {{ bank.length }}</span>
+          </div>
+
+          <div class="flip-card flashcard-vertical" :class="flashcardFlipped ? 'is-flipped' : ''" @click="flashcardFlipped = !flashcardFlipped" role="button" tabindex="0" @keydown.enter.prevent="flashcardFlipped = !flashcardFlipped" @keydown.space.prevent="flashcardFlipped = !flashcardFlipped">
+            <div class="flip-card-inner">
+              <div class="flip-card-face flip-card-front glass flashcard-shell rounded-[var(--radius)] p-5 sm:p-8 flex flex-col items-center justify-center text-center">
+                <p class="text-4xl sm:text-5xl md:text-7xl font-black text-[var(--color-gold)]">{{ flashcard.word }}</p>
+                <p class="mt-3 text-base sm:text-lg font-bold tracking-wide text-[var(--color-primary)]">{{ flashcard.pinyin }}</p>
+                <p class="mt-6 sm:mt-10 text-sm font-bold text-[var(--color-muted)]">點擊翻面 · TAP TO FLIP</p>
+              </div>
+              <div class="flip-card-face flip-card-back glass flashcard-shell rounded-[var(--radius)] p-4 sm:p-6 md:p-8 overflow-auto">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-xs font-black tracking-[.2em] text-[var(--color-accent)]">MEANING & APPLICATION</span>
+                  <span class="text-xs text-[var(--color-muted)]">點擊返回正面</span>
+                </div>
+                <h3 class="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--color-gold)] mt-4 sm:mt-6">{{ flashcard.word }}</h3>
+                <p class="text-base font-bold tracking-wide text-[var(--color-primary)] mt-2">{{ flashcard.pinyin }}</p>
+                <div class="mt-4 sm:mt-6 space-y-4 sm:space-y-5 text-left">
+                  <div>
+                    <p class="text-xs font-black text-[var(--color-accent)]">中文釋義</p>
+                    <p class="font-bold leading-relaxed mt-1">{{ flashcard.meaning }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-black text-[var(--color-accent)]">English Meaning</p>
+                    <p class="text-sm leading-relaxed mt-1 text-[var(--color-text)]">{{ flashcard.english }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-black text-[var(--color-accent)]">中文例句</p>
+                    <p class="text-sm leading-relaxed mt-1">{{ flashcard.example }}</p>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="rounded-lg bg-[var(--color-primary)]/10 p-3">
+                      <p class="text-xs font-black text-[var(--color-primary)]">近義詞</p>
+                      <p class="text-sm font-bold mt-1">{{ flashcard.synonyms.join('、') }}</p>
+                    </div>
+                    <div class="rounded-lg bg-[var(--color-gold)]/10 p-3">
+                      <p class="text-xs font-black text-[var(--color-gold)]">反義詞</p>
+                      <p class="text-sm font-bold mt-1">{{ flashcard.antonyms.join('、') }}</p>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-2 pt-1">
+                    <button @click.stop="speak(flashcard.word, 'zh-HK')" class="rounded-lg bg-[var(--color-accent)]/20 px-3 py-2 text-xs font-black text-[var(--color-accent)]">🔊 廣東話</button>
+                    <button @click.stop="speak(flashcard.word, 'zh-CN')" class="rounded-lg bg-[var(--color-gold)]/20 px-3 py-2 text-xs font-black text-[var(--color-gold)]">🔊 普通話</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-center gap-3 mt-5">
+            <button @click.stop="previousFlashcard" class="card rounded-lg min-h-11 px-4 py-2 font-bold flex-1 sm:flex-none">← 上一張</button>
+            <button @click.stop="nextFlashcard" class="rounded-lg bg-[var(--color-primary)] min-h-11 px-4 py-2 font-bold text-[var(--color-primary-contrast)] flex-1 sm:flex-none">下一張 →</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-5 flashcard-index-grid">
+          <button v-for="(item, index) in bank" :key="item.id" @click="flashcardIndex = index; flashcardFlipped = false" :class="flashcardIndex === index ? 'border-[var(--color-gold)] bg-[var(--color-surface)]' : 'card'" class="rounded-[var(--radius)] min-h-20 sm:min-h-24 p-3 text-left hover:border-[var(--color-accent)] transition">
+            <p class="font-black text-sm text-[var(--color-gold)] leading-snug">{{ item.word }}</p>
+            <p class="text-[10px] text-[var(--color-muted)] mt-2 line-clamp-2">{{ item.english }}</p>
+          </button>
+        </div>
+      </section>
+
+      <section v-if="activeTab === 'puzzle'">
+        <div v-if="!gameStarted" class="glass rounded-[var(--radius)] p-6 sm:p-8 text-center mb-5">
+          <div class="text-5xl mb-4">🧩</div>
+          <h2 class="text-xl sm:text-2xl font-black">準備開始山水連消？</h2>
+          <p class="text-sm text-[var(--color-muted)] mt-2">準備好後開始挑戰，找出棋盤上的全部成語。</p>
+          <button @click="startGame" class="mt-5 rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 min-h-11 font-black text-[var(--color-primary-contrast)] w-full sm:w-auto">開始遊戲</button>
+        </div>
+        <div v-if="gameStarted" class="glass rounded-[var(--radius)] p-4 sm:p-6 md:p-9">
+        <div class="puzzle-layout">
+        <aside class="syllabus-left">
+          <p class="text-xs font-black text-[var(--color-accent)] mb-2">課程清單</p>
+          <div class="syllabus-side-list">
+            <div v-for="item in bank" :key="'left-' + item.id" :class="syllabusFoundIds.includes(item.id) ? 'syllabus-word is-found' : 'syllabus-word'">{{ item.word }}</div>
+          </div>
+        </aside>
+        <div>
+        <div class="flex flex-wrap justify-between gap-3 mb-5">
+          <div>
+            <p class="text-xs font-bold text-[var(--color-accent)]">山水詞語高手 · 動態直線連消</p>
+            <h2 class="text-xl sm:text-2xl font-black mt-1">一筆連出四個相鄰字</h2>
+            <p class="text-sm text-[var(--color-muted)] mt-1">棋盤大小、方向和位置每局隨機。按住一個字，沿橫線、直線或斜線滑過四格。</p>
+          </div>
+          <div class="puzzle-actions">
+            <button type="button" @click.stop="revealFromButton" :disabled="timeExpired || remainingBoardWords.length === 0 || coins < 40" :title="revealTitle" class="rounded-lg bg-[var(--color-accent)] px-3 py-2 min-h-11 font-bold text-[var(--color-primary-contrast)] transition disabled:cursor-not-allowed disabled:opacity-45 sm:px-4">揭示一個 · 40</button>
+            <button type="button" @click.stop="buyExtraTime" :disabled="!canBuyTime" :title="timeBoostUsed ? '本局已加時' : '花費 30 金幣加 15 秒'" class="card rounded-lg px-3 py-2 min-h-11 font-bold transition disabled:cursor-not-allowed disabled:opacity-45 sm:px-4">加時 · 30</button>
+            <button type="button" @click.stop="buyDecoyFade" :disabled="!canBuyDecoy" :title="decoyFadeUsed ? '本局已去干擾' : '花費 15 金幣淡化干擾字'" class="card rounded-lg px-3 py-2 min-h-11 font-bold transition disabled:cursor-not-allowed disabled:opacity-45 sm:px-4">去干擾 · 15</button>
+            <button type="button" @click.stop="nextBoard" class="rounded-lg bg-[var(--color-primary)] px-3 py-2 min-h-11 font-bold text-[var(--color-primary-contrast)] sm:px-4">換一局（{{ boardSize }}×{{ boardSize }}）</button>
+          </div>
+        </div>
+        <div class="puzzle-meta mb-5 text-xs font-bold text-[var(--color-muted)]">
+          <span class="card rounded-full px-3 py-2">本局 {{ boardWords.length }} 個答案</span>
+          <span class="card rounded-full px-3 py-2">已找到 {{ foundBoardWords.length }} / {{ boardWords.length }}</span>
+          <span class="card rounded-full px-3 py-2" :class="timeExpired || timerSeconds <= 10 ? 'text-[var(--color-danger)]' : ''">剩餘 {{ timerText }}</span>
+          <span class="card rounded-full px-3 py-2">{{ boardSize }}×{{ boardSize }} 棋盤</span>
+          <span class="card rounded-full px-3 py-2 hud-wide">可向 8 個方向</span>
+        </div>
+        <div class="card rounded-[var(--radius)] p-3 md:p-5 max-w-[620px] mx-auto puzzle-grid" @mouseup="finishSwipe" @mouseleave="finishSwipe" @touchend="finishSwipe" @touchcancel="finishSwipe">
+          <div class="grid gap-2 md:gap-3" :style="{gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`}">
+            <button v-for="(tile, index) in board" :key="tile.id" :data-index="index" @mousedown.prevent="beginSwipe(index)" @mouseenter="enterTile(index)" @mouseup.prevent="finishSwipe" @pointerdown.prevent="beginSwipe(index)" @pointerenter="enterTile(index)" @pointerup.prevent="finishSwipe" @touchstart.prevent="beginSwipe(index)" @touchmove.prevent="moveTouch" @touchend.prevent="finishSwipe" :class="[tile.cleared ? 'cleared' : '', selected.includes(index) ? 'selected' : '', decoyFadeUsed && !tile.wordId ? 'is-decoy' : '', (boardCompleted || timeExpired) && tile.wordId ? (foundBoardWordIds.includes(tile.wordId) ? 'answer-found' : 'answer-highlight') : '']" class="tile rounded-[var(--radius)] border border-[var(--color-muted)]/20 bg-[var(--color-surface)] font-black">{{ tile.char }}</button>
+          </div>
+        </div>
+        <div class="text-center mt-5 min-h-8 font-bold" :class="boardCompleted ? 'text-[var(--color-success)]' : 'text-[var(--color-gold)]'">{{ puzzleMessage || (selected.length ? selected.map(i => board[i].char).join('') : boardCompleted ? '🎉 本局已完成！' : timeExpired ? '⏰ 本局時間結束' : '拖曳開始連線') }}</div>
+                  <div v-if="boardCompleted || timeExpired" class="mt-5 rounded-[var(--radius)] border p-5" :class="boardCompleted ? 'border-[var(--color-success)]/50 bg-[var(--color-success)]/10' : 'border-[var(--color-gold)]/50 bg-[var(--color-gold)]/10'">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p v-if="boardCompleted" class="font-black text-lg text-[var(--color-success)]">本局完成！</p>
+              <p v-else class="font-black text-lg text-[var(--color-gold)]">本局時間結束</p>
+              <p v-if="boardCompleted && roundRevealedIds.length" class="text-sm text-[var(--color-muted)] mt-1">本局有 {{ roundRevealedIds.length }} 個答案是用揭示完成的，不會算作已掌握。</p>
+              <p v-else-if="boardCompleted" class="text-sm text-[var(--color-muted)] mt-1">你自己找出了棋盤上的全部成語！</p>
+              <p v-else class="text-sm text-[var(--color-muted)] mt-1">以下是本局的詞語和意思，繼續努力！</p>
+            </div>
+            <button @click="newBoard" class="rounded-lg bg-[var(--color-primary)] px-4 py-2 min-h-11 font-bold w-full sm:w-auto">再玩一局</button>
+          </div>
+          <div class="grid gap-3 mt-4">
+            <div v-for="word in boardWords" :key="word.id" class="card rounded-lg p-3">
+              <p class="font-black text-[var(--color-gold)]">{{ word.word }}</p>
+              <p class="text-sm text-[var(--color-muted)] mt-1">{{ word.meaning }}</p>
+            </div>
+          </div>
+        </div>
+        </div>
+          <aside class="syllabus-right card rounded-[var(--radius)] p-4 lg:sticky lg:top-5">
+            <p class="text-xs font-black text-[var(--color-accent)] mb-2">清單 · {{ syllabusFoundIds.length }} / {{ bank.length }}</p>
+            <div class="syllabus-side-list">
+              <div v-for="item in bank" :key="'right-' + item.id" :class="syllabusFoundIds.includes(item.id) ? 'syllabus-word is-found' : 'syllabus-word'">{{ item.word }}</div>
+            </div>
+          </aside>
+        </div>
+        </div>
+      </section>
+
+      <section v-if="activeTab === 'test'" class="glass rounded-[var(--radius)] p-4 sm:p-6 md:p-9 max-w-4xl mx-auto">
+        <div v-if="!testStarted" class="text-center py-8">
+          <div class="text-6xl mb-5">⛰️</div>
+          <h2 class="text-2xl font-black">山水詞語多元測驗</h2>
+          <p class="text-[var(--color-muted)] mt-3">每次隨機抽取 12 題，每個詞語只考一次；題型與選項每次都會重新打亂。</p>
+          <button @click="startTest" class="mt-7 rounded-[var(--radius)] bg-[var(--color-primary)] px-7 py-3 min-h-11 font-black w-full sm:w-auto">開始測驗</button>
+        </div>
+        <div v-else-if="!testFinished">
+          <div class="flex justify-between text-sm font-bold mb-4"><span>第 {{ testIndex + 1 }} / {{ testQuestions.length }} 題</span><span class="text-[var(--color-accent)]">{{ activeQuestion.typeLabel }}</span></div>
+          <div class="h-2 bg-[var(--color-bg)] rounded-full mb-7">
+            <div class="h-2 bg-[var(--color-accent)] rounded-full" :style="{width: (((testIndex + 1) / testQuestions.length) * 100) + '%'}"></div>
+          </div>
+          <h2 class="text-xl font-bold leading-relaxed">{{ activeQuestion.prompt }}</h2>
+          <div class="grid gap-3 mt-6"><button v-for="option in activeQuestion.options" :key="option" @click="answerTest(option)" :disabled="quizLocked" class="card rounded-[var(--radius)] min-h-12 p-4 text-left font-bold hover:border-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60">{{ option }}</button></div>
+          <div v-if="lastAnswerWrong" class="mt-5 rounded-[var(--radius)] border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-4">
+            <p class="font-black text-[var(--color-danger)]">這題答錯了。</p>
+            <p class="text-sm text-[var(--color-muted)] mt-1">可以花費 25 金幣重答一次，或直接進入下一題。</p>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <button type="button" @click="retryQuiz" :disabled="coins < 25 || quizRetried" class="rounded-lg bg-[var(--color-accent)] px-4 py-2 font-bold text-[var(--color-primary-contrast)] disabled:cursor-not-allowed disabled:opacity-45">測驗重答 · 25</button>
+              <button type="button" @click="continueAfterWrong" class="card rounded-lg px-4 py-2 font-bold">進入下一題</button>
+            </div>
+          </div>
+        </div>
+        <div v-else>
+          <div class="text-center pb-6">
+            <div class="text-6xl">🏆</div>
+            <h2 class="text-2xl font-black mt-4">測驗完成！</h2>
+            <p class="text-4xl font-black text-[var(--color-gold)] mt-4">{{ testScore }} / {{ testQuestions.length }}</p>
+            <p class="text-[var(--color-muted)] mt-3">答對 {{ testScore }} 題，答錯 {{ testReview.length - testScore }} 題。錯題排在最前，並附上詞語解釋。</p>
+            <p v-if="testScore === testQuestions.length" class="mt-2 text-sm font-black text-[var(--color-success)]">全對獎勵 +50 金幣已入帳。</p>
+            <button @click="startTest" class="mt-6 card rounded-lg px-5 py-2 font-bold">重新測驗</button>
+          </div>
+          <h3 class="text-lg font-black mb-3">作答回顧</h3>
+          <div class="grid gap-3">
+            <article v-for="item in testReviewSorted" :key="item.number" class="review-item rounded-[var(--radius)] p-4 text-left" :class="item.correct ? 'is-correct' : 'is-wrong'">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-xs font-black text-[var(--color-accent)]">第 {{ item.number }} 題 · {{ item.typeLabel }}</p>
+                <p class="text-xs font-black" :class="item.correct ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ item.correct ? '正確' : '錯誤' }}</p>
+              </div>
+              <p v-if="item.word" class="font-black text-[var(--color-gold)] mt-2">{{ item.word }}</p>
+              <p v-if="item.pinyin" class="text-sm font-bold text-[var(--color-primary)] mt-1">{{ item.pinyin }}</p>
+              <p class="font-bold leading-relaxed mt-2">{{ item.prompt }}</p>
+              <p class="text-sm mt-3"><span class="text-[var(--color-muted)]">你的答案</span> · {{ item.chosen }}</p>
+              <p v-if="!item.correct" class="text-sm mt-1"><span class="text-[var(--color-muted)]">正確答案</span> · {{ item.answer }}</p>
+              <div class="mt-3 pt-3 border-t border-[var(--color-muted)]/20 space-y-2">
+                <div v-if="item.meaning">
+                  <p class="text-xs font-black text-[var(--color-accent)]">中文釋義</p>
+                  <p class="text-sm leading-relaxed mt-1">{{ item.meaning }}</p>
+                </div>
+                <div v-if="item.english">
+                  <p class="text-xs font-black text-[var(--color-accent)]">English Meaning</p>
+                  <p class="text-sm leading-relaxed mt-1">{{ item.english }}</p>
+                </div>
+                <div v-if="item.example">
+                  <p class="text-xs font-black text-[var(--color-accent)]">中文例句</p>
+                  <p class="text-sm leading-relaxed mt-1">{{ item.example }}</p>
+                </div>
+              </div>
+            </article>
+          </div>
+          <div class="text-center mt-6">
+            <button @click="startTest" class="rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-2.5 font-black text-[var(--color-primary-contrast)]">再考一次</button>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="activeTab === 'partner'" class="glass rounded-[var(--radius)] p-4 sm:p-6 md:p-9 max-w-3xl mx-auto">
+        <p class="text-xs font-black tracking-[0.2em] text-[var(--color-accent)]">夥伴 · 第 {{ careDays }} 天照顧</p>
+        <div class="pet-stage mt-5 flex flex-col items-center text-center">
+          <div class="ling-model is-stage" :class="['stage-' + petStage, petSleeping ? 'is-sleeping' : '', goldBorder ? 'is-gold' : '', evolving ? 'is-evolving' : '', feedingAnim ? 'is-feeding' : '']">
+            <span class="ling-shadow"></span>
+            <span class="ling-halo"></span>
+            <span class="ling-body"></span>
+            <span class="ling-sprout"></span>
+            <span class="ling-peak"></span>
+            <span class="ling-cloud"></span>
+            <span class="ling-eye left"></span>
+            <span class="ling-eye right"></span>
+            <span v-if="evolving" class="ling-spark"></span>
+          </div>
+          <h2 class="text-2xl font-black mt-4">{{ petStageLabel }}</h2>
+          <p class="text-sm text-[var(--color-muted)] mt-2 max-w-md">{{ petStatus }}</p>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 mt-6">
+          <div class="card rounded-[var(--radius)] p-4">
+            <p class="text-xs font-black text-[var(--color-accent)]">飽食</p>
+            <div class="meter-row mt-2"><span v-for="n in 5" :key="'h'+n" class="meter-pip" :class="n <= hunger ? 'is-on' : ''"></span></div>
+          </div>
+          <div class="card rounded-[var(--radius)] p-4">
+            <p class="text-xs font-black text-[var(--color-accent)]">心情</p>
+            <div class="meter-row mt-2"><span v-for="n in 5" :key="'m'+n" class="meter-pip mood" :class="n <= mood ? 'is-on' : ''"></span></div>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 mt-4">
+          <button type="button" @click="feedPet" :disabled="coins < 20 || hunger >= 5" class="shop-row rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
+            <p>餵食 · 20</p>
+            <p class="text-xs font-medium text-[var(--color-muted)] mt-1">飽食 +2。每天第一次餵食會讓小山靈長大一天。餵食不會喚醒沉睡，也不會替你完成題目。</p>
+          </button>
+          <button type="button" @click="viewScenery" :disabled="coins < 20 || mood >= 5" class="shop-row rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
+            <p>賞景 · 20</p>
+            <p class="text-xs font-medium text-[var(--color-muted)] mt-1">心情 +1。隔夜沒來看會餓；賞景同樣不會喚醒沉睡。</p>
+          </button>
+        </div>
+        <div class="mt-6">
+          <p class="text-xs font-black text-[var(--color-accent)] mb-2">連消協助（僅限進行中的一局）</p>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <button type="button" @click="buyExtraTime" :disabled="!canBuyTime" class="shop-row rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
+              <p>加時 15 秒 · 30</p>
+              <p class="text-xs font-medium text-[var(--color-muted)] mt-1">{{ timeHelpNote }}</p>
+            </button>
+            <button type="button" @click="buyDecoyFade" :disabled="!canBuyDecoy" class="shop-row rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
+              <p>去干擾 · 15</p>
+              <p class="text-xs font-medium text-[var(--color-muted)] mt-1">{{ decoyHelpNote }}</p>
+            </button>
+          </div>
+        </div>
+        <button type="button" @click="buyGoldBorder" :disabled="goldBorder || coins < 60" class="shop-row mt-4 w-full rounded-[var(--radius)] p-4 text-left font-bold disabled:cursor-not-allowed disabled:opacity-45">
+          <p>{{ goldBorder ? '已解鎖：金色山邊' : '金色山邊 · 60' }}</p>
+          <p class="text-xs font-medium text-[var(--color-muted)] mt-1">一次性外觀，不影響答題與掌握進度。</p>
+        </button>
+        <p class="text-xs text-[var(--color-muted)] mt-5">已掌握 {{ masteredBoardWordIds.length }} / {{ bank.length }} 個成語。連勝與掌握只來自自己找出或答對。</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const {
+      createApp,
+      ref,
+      computed,
+      watch,
+      reactive,
+      onMounted,
+      onBeforeUnmount
+    } = Vue;
+    const SAVE_KEY = 'chengyu-shanshui-v1';
+    const START_COINS = 50;
+    if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    const fallbackBank = [
+      ['山明水秀', '山水清麗、景色優美。'],
+      ['青山綠水', '青翠的山嶺和碧綠的水，泛指美好的山河。'],
+      ['湖光山色', '湖上的風光和山間的景色。'],
+      ['水天一色', '水面和天空呈現同一種顏色，形容水天相接的景象。'],
+      ['錦繡河山', '美好壯麗的國土山河。'],
+      ['名山大川', '著名的高山和大河，泛指壯麗的自然景觀。'],
+      ['江山如畫', '山河美麗得像圖畫一樣。'],
+      ['煙波浩渺', '水面煙霧迷濛、遼闊無邊的樣子。'],
+      ['波光粼粼', '水波被陽光照射，閃閃發光。'],
+      ['碧波萬頃', '青綠色的水面廣闊無邊。'],
+      ['美不勝收', '美好的景物太多，看也看不完。'],
+      ['別有洞天', '另有一番奇妙或優美的境界。'],
+      ['洞天福地', '神仙居住的地方，亦指風景優美的地方。'],
+      ['詩情畫意', '像詩畫所描繪的美好意境。'],
+      ['世外桃源', '與世隔絕、安寧美好的理想地方。'],
+      ['令人神往', '使人心裡嚮往。'],
+      ['引人入勝', '吸引人進入美妙的境界。']
+    ].map((x, i) => ({
+      id: i + 1,
+      word: x[0],
+      meaning: x[1]
+    }));
+    const sceneClues = {
+      '山明水秀': '春遊時遠望層巒疊翠、溪流清澈，該用哪個詞語？',
+      '青山綠水': '村口兩側是蒼翠山巒，門前一條清溪緩緩流過。',
+      '湖光山色': '傍晚坐在湖邊，倒影裡有遠山，晚霞鋪在水面上。',
+      '水天一色': '出海遠眺，分不清哪裡是海、哪裡是天。',
+      '錦繡河山': '從高空俯瞰大地，田野、江河與城市交織如錦。',
+      '名山大川': '他立志走遍各地的著名高峰與大江大河。',
+      '江山如畫': '登上城樓遠望，群山層疊、江水蜿蜒，像一幅山水畫。',
+      '煙波浩渺': '江面晨霧未散，小船漸漸隱入茫茫水氣裡。',
+      '波光粼粼': '正午陽光灑在河面，水紋一閃一閃像碎銀。',
+      '碧波萬頃': '站在堤岸望去，綠色的水面一直延伸到天邊。',
+      '美不勝收': '園裡四季花卉同時盛放，目光不知該停在哪一處。',
+      '別有洞天': '穿過山洞後，竟出現一片隱藏的花谷。',
+      '洞天福地': '這座依山傍水的小鎮清幽安穩，像神仙居處。',
+      '詩情畫意': '細雨灑在石板巷與烏篷船上，處處像詩句裡的畫面。',
+      '世外桃源': '這山村沒有車聲人潮，日子過得安穩寧靜。',
+      '令人神往': '聽完朋友描述那片海岸，大家心裡都想親自去一趟。',
+      '引人入勝': '導覽一路講故事，遊客不知不覺跟著走進最深處。'
+    };
+    fallbackBank.forEach(item => {
+      item.clue = sceneClues[item.word];
+    });
+
+    const pinyinTranslations = {
+      '山明水秀': 'shān míng shuǐ xiù', '青山綠水': 'qīng shān lǜ shuǐ', '湖光山色': 'hú guāng shān sè',
+      '水天一色': 'shuǐ tiān yī sè', '錦繡河山': 'jǐn xiù hé shān', '名山大川': 'míng shān dà chuān',
+      '江山如畫': 'jiāng shān rú huà', '煙波浩渺': 'yān bō hào miǎo', '波光粼粼': 'bō guāng lín lín',
+      '碧波萬頃': 'bì bō wàn qǐng', '美不勝收': 'měi bù shèng shōu', '別有洞天': 'bié yǒu dòng tiān',
+      '洞天福地': 'dòng tiān fú dì', '詩情畫意': 'shī qíng huà yì', '世外桃源': 'shì wài táo yuán',
+      '令人神往': 'lìng rén shén wǎng', '引人入勝': 'yǐn rén rù shèng'
+    };
+    const englishTranslations = {
+      '山明水秀': 'Beautiful mountains and clear waters',
+      '青山綠水': 'Green mountains and clear rivers',
+      '湖光山色': 'The beauty of lakes and mountains',
+      '水天一色': 'The water and sky merge into one color',
+      '錦繡河山': 'A magnificent and beautiful land',
+      '名山大川': 'Famous mountains and great rivers',
+      '江山如畫': 'The landscape is as beautiful as a painting',
+      '煙波浩渺': 'Vast and misty waters',
+      '波光粼粼': 'Sparkling waves glistening in the sunlight',
+      '碧波萬頃': 'Endless expanses of emerald waves',
+      '美不勝收': 'Too beautiful to take it all in',
+      '別有洞天': 'A wonderfully different and enchanting place',
+      '洞天福地': 'A paradise blessed with beautiful scenery',
+      '詩情畫意': 'Poetic and picturesque beauty',
+      '世外桃源': 'An idyllic paradise away from the world',
+      '令人神往': 'To inspire longing and admiration',
+      '引人入勝': 'Compelling and engrossing'
+    };
+    const exampleSentences = {
+      '山明水秀': '春日郊遊時，我們被眼前山明水秀的景色深深吸引。',
+      '青山綠水': '這座古村落被青山綠水環抱，宛如一幅天然畫卷。',
+      '湖光山色': '傍晚的湖光山色與遠處的晚霞相互輝映，美不勝收。',
+      '水天一色': '登上高峰遠眺，只見海面遼闊，水天一色。',
+      '錦繡河山': '我們應當珍惜祖國的錦繡河山，並努力守護自然環境。',
+      '名山大川': '他遊歷各地的名山大川，逐漸開闊了自己的眼界。',
+      '江山如畫': '站在山頂俯瞰群峰，眼前江山如畫，令人流連忘返。',
+      '煙波浩渺': '小舟在煙波浩渺的江面上緩緩前行，漸漸消失在霧色中。',
+      '波光粼粼': '陽光灑在河面上，波光粼粼，像鋪滿了碎銀。',
+      '碧波萬頃': '放眼望去，碧波萬頃的海洋與蔚藍天空連成一片。',
+      '美不勝收': '春天百花盛開，公園裡的景致美不勝收。',
+      '別有洞天': '穿過狹窄的山洞後，眼前竟是別有洞天的桃花谷。',
+      '洞天福地': '這個依山傍水的小鎮環境清幽，真可稱得上洞天福地。',
+      '詩情畫意': '雨後的江南小巷充滿詩情畫意，吸引許多攝影愛好者。',
+      '世外桃源': '遠離城市喧囂的山村，仿佛是一處與世無爭的世外桃源。',
+      '令人神往': '那片未被污染的海岸風光旖旎，早已令人神往。',
+      '引人入勝': '導遊生動的介紹令這段古城歷史更加引人入勝。'
+    };
+    const advancedEnglishTranslations = {
+      '山明水秀': 'A picturesque landscape characterised by verdant mountains and limpid waters.',
+      '青山綠水': 'A tranquil natural setting of verdant hills and pristine waterways.',
+      '湖光山色': 'The harmonious splendour of a lake reflecting the surrounding mountains.',
+      '水天一色': 'A breathtaking vista in which the water and sky appear to merge seamlessly.',
+      '錦繡河山': 'A magnificent and richly endowed land, celebrated for its natural beauty.',
+      '名山大川': 'Renowned mountains and majestic rivers, representing the grandeur of nature.',
+      '江山如畫': 'A landscape of such exceptional beauty that it resembles a masterful painting.',
+      '煙波浩渺': 'An expansive body of water veiled in mist and extending beyond the visible horizon.',
+      '波光粼粼': 'Rippling water glittering with reflected light beneath the sun.',
+      '碧波萬頃': 'Vast, emerald-green expanses of water stretching as far as the eye can see.',
+      '美不勝收': 'So abundant in beauty that it is impossible to appreciate every sight fully.',
+      '別有洞天': 'A remarkably enchanting realm revealed beyond an ordinary or concealed entrance.',
+      '洞天福地': 'An idyllic and secluded haven blessed with extraordinary natural beauty.',
+      '詩情畫意': 'An atmosphere possessing the evocative charm and artistic beauty of poetry and painting.',
+      '世外桃源': 'An idyllic refuge removed from worldly disturbance and social pressures.',
+      '令人神往': 'To inspire profound admiration and an irresistible desire to visit or experience it.',
+      '引人入勝': 'To captivate an audience and draw them progressively into a fascinating experience.'
+    };
+    fallbackBank.forEach(item => {
+      item.english = advancedEnglishTranslations[item.word] || englishTranslations[item.word];
+      item.example = exampleSentences[item.word];
+      item.pinyin = pinyinTranslations[item.word];
+    });
+
+    const relatedWords = {
+      '山明水秀': { synonyms: ['湖光山色', '青山綠水'], antonyms: ['窮山惡水'] },
+      '青山綠水': { synonyms: ['山明水秀', '碧波萬頃'], antonyms: ['窮山惡水'] },
+      '湖光山色': { synonyms: ['山明水秀', '江山如畫'], antonyms: ['荒山野嶺'] },
+      '水天一色': { synonyms: ['煙波浩渺', '碧波萬頃'], antonyms: ['天水相隔'] },
+      '錦繡河山': { synonyms: ['江山如畫', '名山大川'], antonyms: ['滿目瘡痍'] },
+      '名山大川': { synonyms: ['錦繡河山', '江山如畫'], antonyms: ['窮鄉僻壤'] },
+      '江山如畫': { synonyms: ['錦繡河山', '湖光山色'], antonyms: ['荒蕪破敗'] },
+      '煙波浩渺': { synonyms: ['水天一色', '碧波萬頃'], antonyms: ['一清見底'] },
+      '波光粼粼': { synonyms: ['碧波萬頃', '水波蕩漾'], antonyms: ['死水一潭'] },
+      '碧波萬頃': { synonyms: ['波光粼粼', '青山綠水'], antonyms: ['污水橫流'] },
+      '美不勝收': { synonyms: ['引人入勝', '賞心悅目'], antonyms: ['不堪入目'] },
+      '別有洞天': { synonyms: ['洞天福地', '另有天地'], antonyms: ['平淡無奇'] },
+      '洞天福地': { synonyms: ['世外桃源', '別有洞天'], antonyms: ['窮山惡水'] },
+      '詩情畫意': { synonyms: ['風花雪月', '情景交融'], antonyms: ['枯燥乏味'] },
+      '世外桃源': { synonyms: ['洞天福地', '人間仙境'], antonyms: ['人間地獄'] },
+      '令人神往': { synonyms: ['心嚮往之', '夢寐以求'], antonyms: ['望而卻步'] },
+      '引人入勝': { synonyms: ['扣人心弦', '引人入彀'], antonyms: ['索然無味'] }
+    };
+    fallbackBank.forEach(item => Object.assign(item, relatedWords[item.word] || { synonyms: [], antonyms: [] }));
+
+    function shuffle(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    createApp({
+      setup() {
+        const bank = reactive(fallbackBank);
+        const activeTab = ref('riddle'),
+          coins = ref(START_COINS),
+          streak = ref(0),
+          hunger = ref(3),
+          mood = ref(3),
+          petSleeping = ref(false),
+          goldBorder = ref(false),
+          careDays = ref(0),
+          lastVisitDate = ref(''),
+          lastFedDate = ref(''),
+          seenStage = ref(1),
+          evolving = ref(false),
+          feedingAnim = ref(false),
+          clerkReady = ref(false),
+          signedIn = ref(false),
+          clerkName = ref('');
+        const flashcardIndex = ref(0),
+          flashcardFlipped = ref(false);
+                  const board = ref([]),
+          gameStarted = ref(false),
+          boardSize = ref(5),
+          boardWords = ref([]),
+          selected = ref([]),
+          swiping = ref(false),
+          startIndex = ref(null),
+          puzzleMessage = ref(''),
+          timerSeconds = ref(90),
+          roundLimit = ref(90),
+          remainingMs = ref(0),
+          timerPaused = ref(true),
+          timerDeadline = ref(0),
+          elapsedSeconds = ref(0),
+          timerId = ref(null),
+          expiryTimerId = ref(null),
+          hungerTickId = ref(null),
+          timeExpired = ref(false),
+          timeBoostUsed = ref(false),
+          decoyFadeUsed = ref(false),
+          foundBoardWordIds = ref([]),
+          failedBoardWordIds = ref([]),
+          masteredBoardWordIds = ref([]),
+          roundRevealedIds = ref([]);
+        const testStarted = ref(false),
+          testFinished = ref(false),
+          testQuestions = ref([]),
+          testIndex = ref(0),
+          testScore = ref(0),
+          testReview = ref([]),
+          quizLocked = ref(false),
+          lastAnswerWrong = ref(false),
+          quizRetried = ref(false),
+          pendingWrongChoice = ref('');
+        const tabs = [{
+          id: 'riddle',
+          label: '📚 學習卡'
+        }, {
+          id: 'puzzle',
+          label: '🧩 連消'
+        }, {
+          id: 'test',
+          label: '📝 測驗'
+        }, {
+          id: 'partner',
+          label: '夥伴'
+        }];
+        const flashcard = computed(() => bank[flashcardIndex.value]);
+        const activeQuestion = computed(() => testQuestions.value[testIndex.value] || {});
+        const foundBoardWords = computed(() => boardWords.value.filter(word => foundBoardWordIds.value.includes(word.id)));
+        const syllabusFoundIds = computed(() => masteredBoardWordIds.value);
+        const remainingBoardWords = computed(() => boardWords.value.filter(word => !foundBoardWordIds.value.includes(word.id)));
+        const boardCompleted = computed(() => boardWords.value.length > 0 && foundBoardWords.value.length === boardWords.value.length);
+        const testReviewSorted = computed(() =>
+          [...testReview.value].sort((a, b) => Number(a.correct) - Number(b.correct) || a.number - b.number)
+        );
+        const timerText = computed(() => {
+          const minutes = Math.floor(timerSeconds.value / 60).toString().padStart(2, '0');
+          const seconds = (timerSeconds.value % 60).toString().padStart(2, '0');
+          return `${minutes}:${seconds}`;
+        });
+        const puzzleRoundActive = computed(() =>
+          gameStarted.value && !timeExpired.value && !boardCompleted.value && boardWords.value.length > 0
+        );
+        const canBuyTime = computed(() => puzzleRoundActive.value && !timeBoostUsed.value && coins.value >= 30);
+        const canBuyDecoy = computed(() => puzzleRoundActive.value && !decoyFadeUsed.value && coins.value >= 15);
+        const revealTitle = computed(() => {
+          if (timeExpired.value) return '本局時間已結束';
+          if (remainingBoardWords.value.length === 0) return '本局答案已全部揭示';
+          if (coins.value < 40) return '金幣不足（需要 40）';
+          return '花費 40 金幣揭示一個答案；揭示不算已掌握';
+        });
+        const timeHelpNote = computed(() => {
+          if (!gameStarted.value || boardCompleted.value || timeExpired.value) return '請先開始一局連消。';
+          if (timeBoostUsed.value) return '本局已經加過時。';
+          if (coins.value < 30) return '金幣不足。';
+          return '本局限用一次。';
+        });
+        const decoyHelpNote = computed(() => {
+          if (!gameStarted.value || boardCompleted.value || timeExpired.value) return '請先開始一局連消。';
+          if (decoyFadeUsed.value) return '本局已經去過干擾。';
+          if (coins.value < 15) return '金幣不足。';
+          return '淡化干擾字，真正的答案會比較明顯。';
+        });
+        const petStage = computed(() => {
+          const mastered = masteredBoardWordIds.value.length;
+          if (mastered >= bank.length || careDays.value >= 25) return 5;
+          if (careDays.value >= 15) return 4;
+          if (careDays.value >= 8) return 3;
+          if (careDays.value >= 3) return 2;
+          return 1;
+        });
+        const petStageLabel = computed(() => ['種子', '萌芽', '小山靈', '靈峰', '雲間靈'][petStage.value - 1]);
+        const petStatus = computed(() => {
+          if (evolving.value) return '小山靈長大了！';
+          if (petSleeping.value) return '小山靈正在沉睡。用自己找出成語或答對測驗才能喚醒，餵食與賞景不夠。隔夜沒來看也會餓。';
+          if (hunger.value <= 1) return '小山靈有點餓了。每天第一次餵食會讓牠長大一天。';
+          if (mood.value <= 1) return '小山靈有點悶悶的。誠實找出成語或答對測驗會讓牠開心。';
+          if (petStage.value === 5) return '雲間靈與你一起看遍山水成語。繼續每天照顧，保持飽食。';
+          if (petStage.value === 4) return '靈峰成形了。再照顧幾天，或掌握全部十七個成語，就會化成雲間靈。';
+          if (petStage.value === 3) return '小山靈長大了。繼續餵食、連消與測驗，會再長高成靈峰。';
+          if (petStage.value === 2) return '種子發芽了。再照顧幾天就會變成小山靈。';
+          return '一顆山水種子正跟著你學成語。餵食、完成連消或測驗都會讓牠長大。';
+        });
+
+        function snapshotSave() {
+          return {
+            coins: coins.value,
+            streak: streak.value,
+            masteredBoardWordIds: masteredBoardWordIds.value,
+            hunger: hunger.value,
+            mood: mood.value,
+            petSleeping: petSleeping.value,
+            goldBorder: goldBorder.value,
+            careDays: careDays.value,
+            lastVisitDate: lastVisitDate.value,
+            lastFedDate: lastFedDate.value,
+            seenStage: seenStage.value
+          };
+        }
+
+        function applySave(data) {
+          if (!data || typeof data !== 'object') return;
+          if (typeof data.coins === 'number') coins.value = data.coins;
+          if (typeof data.streak === 'number') streak.value = data.streak;
+          if (Array.isArray(data.masteredBoardWordIds)) masteredBoardWordIds.value = data.masteredBoardWordIds;
+          if (typeof data.hunger === 'number') hunger.value = clampMeter(data.hunger);
+          if (typeof data.mood === 'number') mood.value = clampMeter(data.mood);
+          if (typeof data.petSleeping === 'boolean') petSleeping.value = data.petSleeping;
+          if (typeof data.goldBorder === 'boolean') goldBorder.value = data.goldBorder;
+          if (typeof data.careDays === 'number') careDays.value = Math.max(0, data.careDays);
+          if (typeof data.lastVisitDate === 'string') lastVisitDate.value = data.lastVisitDate;
+          if (typeof data.lastFedDate === 'string') lastFedDate.value = data.lastFedDate;
+          if (typeof data.seenStage === 'number') seenStage.value = data.seenStage;
+          if (mood.value <= 0 || hunger.value <= 0) petSleeping.value = true;
+        }
+
+        function persist() {
+          const payload = snapshotSave();
+          try {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+          } catch (error) { /* ignore */ }
+          syncCloudSave(payload);
+        }
+
+        function loadSave() {
+          try {
+            const raw = localStorage.getItem(SAVE_KEY);
+            if (raw) applySave(JSON.parse(raw));
+          } catch (error) { /* ignore */ }
+        }
+
+        function clampMeter(value) {
+          return Math.max(0, Math.min(5, value));
+        }
+
+        function todayISO() {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function daysBetween(from, to) {
+          if (!from) return 0;
+          const a = new Date(`${from}T00:00:00`);
+          const b = new Date(`${to}T00:00:00`);
+          return Math.max(0, Math.round((b - a) / 86400000));
+        }
+
+        function applyOvernightDecay() {
+          const today = todayISO();
+          const missed = daysBetween(lastVisitDate.value, today);
+          if (missed > 0) {
+            hunger.value = clampMeter(hunger.value - Math.min(missed, 3));
+            if (hunger.value <= 0) petSleeping.value = true;
+          }
+          lastVisitDate.value = today;
+          persist();
+        }
+
+        function addCareDay() {
+          careDays.value += 1;
+          maybeEvolve();
+          persist();
+        }
+
+        function maybeEvolve() {
+          const next = petStage.value;
+          if (next > seenStage.value) {
+            evolving.value = true;
+            seenStage.value = next;
+            setTimeout(() => { evolving.value = false; }, 1200);
+          }
+        }
+
+        function getConfig() {
+          return window.CHENG_YU || {};
+        }
+
+        function getSupabase() {
+          const { supabaseUrl, supabasePublishableKey } = getConfig();
+          const url = (supabaseUrl || '').trim();
+          const key = (supabasePublishableKey || '').trim();
+          if (!window.supabase) return null;
+          if (!url.startsWith('https://') || url.includes('YOUR_PROJECT')) return null;
+          if (!key.startsWith('sb_publishable_') || key.includes('REPLACE')) return null;
+          return window.supabase.createClient(url, key, {
+            accessToken: async () => {
+              try {
+                return (await window.Clerk?.session?.getToken()) || null;
+              } catch (error) {
+                return null;
+              }
+            }
+          });
+        }
+
+        async function syncCloudSave(payload) {
+          if (!signedIn.value) return;
+          const client = getSupabase();
+          const userId = window.Clerk?.user?.id;
+          if (!client || !userId) return;
+          try {
+            await client.from('player_saves').upsert({
+              user_id: userId,
+              payload,
+              updated_at: new Date().toISOString()
+            });
+          } catch (error) { /* keep local cache */ }
+        }
+
+        async function loadCloudSave() {
+          try {
+            const client = getSupabase();
+            const userId = window.Clerk?.user?.id;
+            if (!client || !userId) return;
+            const { data } = await client.from('player_saves').select('payload').eq('user_id', userId).maybeSingle();
+            if (!data?.payload) {
+              persist();
+              return;
+            }
+            const localRaw = localStorage.getItem(SAVE_KEY);
+            const hasLocal = !!(localRaw && localRaw !== '{}');
+            if (hasLocal && data.payload.coins != null) {
+              const preferLocal = window.confirm('這個裝置和雲端都有進度。確定＝保留這個裝置，取消＝用雲端。');
+              if (preferLocal) {
+                persist();
+                return;
+              }
+            }
+            applySave(data.payload);
+          } catch (error) { /* keep local cache */ }
+        }
+
+        async function fetchRemoteText() {
+          try {
+            const client = getSupabase();
+            if (!client) return;
+            const { data } = await client.from('idioms').select('*').order('sort_order');
+            if (!data || !data.length) return;
+            data.forEach((row, index) => {
+              const next = {
+                id: row.id,
+                word: row.word,
+                meaning: row.meaning,
+                pinyin: row.pinyin,
+                english: row.english,
+                example: row.example,
+                clue: row.clue,
+                synonyms: row.synonyms || [],
+                antonyms: row.antonyms || []
+              };
+              if (bank[index]) Object.assign(bank[index], next);
+              else bank.push(next);
+            });
+          } catch (error) { /* keep in-page bank */ }
+        }
+
+        async function bootClerk() {
+          try {
+            const clerk = await window.loadChengYuClerk();
+            if (!clerk) {
+              clerkReady.value = false;
+              return;
+            }
+            clerkReady.value = true;
+            const syncUser = async () => {
+              const user = window.Clerk.user;
+              signedIn.value = !!user;
+              clerkName.value = user?.firstName || user?.primaryEmailAddress?.emailAddress || '';
+              if (signedIn.value) await loadCloudSave();
+            };
+            await syncUser();
+            if (window.Clerk.addListener) {
+              window.Clerk.addListener(({ user }) => {
+                signedIn.value = !!user;
+                clerkName.value = user?.firstName || user?.primaryEmailAddress?.emailAddress || '';
+                if (user) loadCloudSave();
+              });
+            }
+          } catch (error) {
+            console.warn('Clerk did not start on this origin.', error);
+            clerkReady.value = false;
+          }
+        }
+
+        async function openSignIn() {
+          await window.openChengYuSignIn();
+        }
+
+        async function signOut() {
+          if (window.Clerk?.signOut) await window.Clerk.signOut();
+          signedIn.value = false;
+          clerkName.value = '';
+        }
+
+        function adjustMood(delta) {
+          mood.value = clampMeter(mood.value + delta);
+          if (mood.value <= 0) petSleeping.value = true;
+        }
+
+        function wakeFromHonestPlay() {
+          if (petSleeping.value) {
+            petSleeping.value = false;
+            if (mood.value < 1) mood.value = 1;
+          }
+        }
+
+        function streakReward() {
+          const next = streak.value + 1;
+          if (next >= 5) return 40;
+          if (next >= 3) return 25;
+          return 15;
+        }
+
+        function onHonestSuccess(extraCoins) {
+          wakeFromHonestPlay();
+          adjustMood(1);
+          const gained = extraCoins == null ? streakReward() : extraCoins;
+          coins.value += gained;
+          streak.value++;
+          persist();
+          return gained;
+        }
+
+        function onMissOrTimeout() {
+          streak.value = 0;
+          adjustMood(-1);
+          persist();
+        }
+
+        function spendCoins(cost) {
+          if (coins.value < cost) return false;
+          coins.value -= cost;
+          persist();
+          return true;
+        }
+
+        function nextFlashcard() {
+          flashcardIndex.value = (flashcardIndex.value + 1) % bank.length;
+          flashcardFlipped.value = false;
+        }
+
+        function previousFlashcard() {
+          flashcardIndex.value = (flashcardIndex.value - 1 + bank.length) % bank.length;
+          flashcardFlipped.value = false;
+        }
+
+        function emptyBoard(size) {
+          return Array.from({
+            length: size * size
+          }, (_, i) => ({
+            id: `empty-${i}`,
+            char: '·',
+            cleared: false,
+            wordId: null,
+            letterIndex: null,
+            hint: false
+          }));
+        }
+
+        function cell(row, col, size) {
+          return row * size + col;
+        }
+
+        function canPlace(size, row, col, dr, dc) {
+          return row + dr * 3 >= 0 && row + dr * 3 < size && col + dc * 3 >= 0 && col + dc * 3 < size;
+        }
+
+        function stopTimerLoops() {
+          clearInterval(timerId.value);
+          clearTimeout(expiryTimerId.value);
+          timerId.value = null;
+          expiryTimerId.value = null;
+        }
+
+        function syncRemainingFromDeadline() {
+          remainingMs.value = Math.max(0, timerDeadline.value - performance.now());
+          timerSeconds.value = Math.ceil(remainingMs.value / 1000);
+          elapsedSeconds.value = Math.min(
+            roundLimit.value,
+            Math.floor((roundLimit.value * 1000 - remainingMs.value) / 1000)
+          );
+        }
+
+        function expireRound() {
+          if (timeExpired.value || boardCompleted.value) return;
+          timeExpired.value = true;
+          remainingMs.value = 0;
+          timerSeconds.value = 0;
+          elapsedSeconds.value = roundLimit.value;
+          timerPaused.value = true;
+          swiping.value = false;
+          selected.value = [];
+          stopTimerLoops();
+          boardWords.value.forEach(word => {
+            if (!foundBoardWordIds.value.includes(word.id) && !failedBoardWordIds.value.includes(word.id)) {
+              failedBoardWordIds.value.push(word.id);
+            }
+          });
+          puzzleMessage.value = '⏰ 時間到了，以下顯示本局全部答案。';
+          onMissOrTimeout();
+        }
+
+        function tickTimer() {
+          if (timerPaused.value || timeExpired.value || boardCompleted.value) return;
+          syncRemainingFromDeadline();
+          if (remainingMs.value <= 0) expireRound();
+        }
+
+        function runTimer() {
+          stopTimerLoops();
+          timerPaused.value = false;
+          timerDeadline.value = performance.now() + remainingMs.value;
+          tickTimer();
+          if (timerPaused.value || remainingMs.value <= 0) return;
+          timerId.value = setInterval(tickTimer, 100);
+          expiryTimerId.value = setTimeout(tickTimer, remainingMs.value + 10);
+        }
+
+        function pauseTimer() {
+          if (!gameStarted.value || timeExpired.value || boardCompleted.value) {
+            stopTimerLoops();
+            timerPaused.value = true;
+            return;
+          }
+          if (!timerPaused.value) syncRemainingFromDeadline();
+          timerPaused.value = true;
+          stopTimerLoops();
+        }
+
+        function maybeResumeTimer() {
+          if (!gameStarted.value || timeExpired.value || boardCompleted.value) return;
+          if (document.hidden || activeTab.value !== 'puzzle') return;
+          if (remainingMs.value <= 0) return;
+          runTimer();
+        }
+
+        function setTab(id) {
+          if (id !== 'puzzle') pauseTimer();
+          activeTab.value = id;
+          if (id === 'puzzle') maybeResumeTimer();
+          if (id === 'partner') startHungerTick();
+          else stopHungerTick();
+        }
+
+        function startPuzzleTimer() {
+          stopTimerLoops();
+          roundLimit.value = boardSize.value === 5 ? 60 : boardSize.value === 6 ? 90 : 130;
+          remainingMs.value = roundLimit.value * 1000;
+          timerSeconds.value = roundLimit.value;
+          elapsedSeconds.value = 0;
+          timeExpired.value = false;
+          timerPaused.value = true;
+          if (activeTab.value === 'puzzle' && !document.hidden) runTimer();
+        }
+
+        function completeActiveRound() {
+          stopTimerLoops();
+          timerPaused.value = true;
+          timeExpired.value = false;
+          hunger.value = clampMeter(hunger.value - 1);
+          addCareDay();
+        }
+
+        function startHungerTick() {}
+
+        function stopHungerTick() {
+          clearInterval(hungerTickId.value);
+          hungerTickId.value = null;
+        }
+
+        function startGame() {
+          gameStarted.value = true;
+          newBoard();
+        }
+
+        function nextBoard() {
+          gameStarted.value = true;
+          newBoard();
+        }
+
+        function newBoard() {
+          stopTimerLoops();
+          timerId.value = null;
+          expiryTimerId.value = null;
+          // Vary both the board size and the number of real answers so the grid
+          // is not a wall of repeated four-character rows.
+          const size = shuffle([5, 6, 7])[0];
+          const wordCount = size === 5 ? 3 : size === 6 ? 4 : 5;
+          boardSize.value = size;
+          foundBoardWordIds.value = [];
+          timeExpired.value = false;
+          timeBoostUsed.value = false;
+          decoyFadeUsed.value = false;
+          roundRevealedIds.value = [];
+
+          const cells = emptyBoard(size);
+          const used = new Set();
+          const directions = shuffle([
+            [0, 1],
+            [0, -1],
+            [1, 0],
+            [-1, 0],
+            [1, 1],
+            [-1, -1],
+            [1, -1],
+            [-1, 1]
+          ]);
+          const missedWords = bank.filter(item => failedBoardWordIds.value.includes(item.id) && !masteredBoardWordIds.value.includes(item.id));
+          const freshWords = shuffle(bank.filter(item => !failedBoardWordIds.value.includes(item.id) && !masteredBoardWordIds.value.includes(item.id)));
+          const availableWords = [...shuffle(missedWords), ...freshWords];
+          const words = (availableWords.length >= wordCount ? availableWords : shuffle(bank.filter(item => !masteredBoardWordIds.value.includes(item.id)))).slice(0, wordCount);
+          const placements = [];
+
+          // Build every legal placement, shuffle them, then take the first
+          // non-overlapping ones. This makes each round's patterns different
+          // while guaranteeing that every displayed answer is playable.
+          words.forEach(item => {
+            const candidates = [];
+            directions.forEach(([dr, dc]) => {
+              for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                  if (!canPlace(size, r, c, dr, dc)) continue;
+                  candidates.push({
+                    item,
+                    dr,
+                    dc,
+                    path: Array.from({ length: 4 }, (_, n) => cell(r + dr * n, c + dc * n, size))
+                  });
+                }
+              }
+            });
+            placements.push(shuffle(candidates));
+          });
+
+          const placedWords = [];
+          placements.forEach(candidates => {
+            const choice = candidates.find(candidate => candidate.path.every(index => !used.has(index)));
+            if (!choice) return;
+            choice.path.forEach((index, n) => {
+              cells[index] = {
+                id: `${choice.item.id}-${n}-${placedWords.length}`,
+                char: [...choice.item.word][n],
+                cleared: false,
+                wordId: choice.item.id,
+                letterIndex: n,
+                hint: false
+              };
+              used.add(index);
+            });
+            placedWords.push(choice.item);
+          });
+
+          // Keep roughly half of the cells as decoys. Decoys are sampled from
+          // the full character bank and are deliberately not assigned wordId.
+          const fillers = shuffle(bank.flatMap(item => [...item.word]));
+          cells.forEach((tile, index) => {
+            if (tile.char === '·') {
+              tile.char = fillers[index % fillers.length];
+              tile.id = `decoy-${index}-${Math.random().toString(36).slice(2, 7)}`;
+              tile.wordId = null;
+            }
+          });
+
+          board.value = cells.map((tile, index) => ({ ...tile, id: `${tile.id}-${index}` }));
+          boardWords.value = placedWords;
+          selected.value = [];
+          puzzleMessage.value = `本局有 ${placedWords.length} 個答案，其餘都是干擾字。`;
+          startPuzzleTimer();
+        }
+
+        function linePath(a, b) {
+          const size = boardSize.value,
+            ar = Math.floor(a / size),
+            ac = a % size,
+            br = Math.floor(b / size),
+            bc = b % size,
+            dr = Math.sign(br - ar),
+            dc = Math.sign(bc - ac);
+          if (ar !== br && ac !== bc && Math.abs(br - ar) !== Math.abs(bc - ac)) return [];
+          const distance = Math.max(Math.abs(br - ar), Math.abs(bc - ac));
+          if (distance !== 3) return [];
+          return Array.from({
+            length: 4
+          }, (_, n) => (ar + dr * n) * size + ac + dc * n);
+        }
+
+        function beginSwipe(i) {
+          if (boardCompleted.value || timeExpired.value || board.value[i]?.cleared) return;
+          swiping.value = true;
+          startIndex.value = i;
+          selected.value = [i];
+          puzzleMessage.value = '';
+        }
+
+        function enterTile(i) {
+          if (!swiping.value || board.value[i]?.cleared) return;
+          const path = linePath(startIndex.value, i);
+          if (path.length === 4 && path.every(x => !board.value[x].cleared)) selected.value = path;
+        }
+
+        function moveTouch(e) {
+          const t = e.touches[0],
+            el = document.elementFromPoint(t.clientX, t.clientY)?.closest('[data-index]');
+          if (el) enterTile(Number(el.dataset.index));
+        }
+
+        function resetBoardSelection() {
+          selected.value = [];
+          swiping.value = false;
+          startIndex.value = null;
+        }
+
+        function revealFromButton() {
+          resetBoardSelection();
+
+          if (timeExpired.value) {
+            puzzleMessage.value = '本局時間已結束，請按「換一局」繼續。';
+            return;
+          }
+
+          if (!boardWords.value.length) {
+            puzzleMessage.value = '請先開始一局遊戲。';
+            return;
+          }
+
+          if (coins.value < 40) {
+            puzzleMessage.value = '金幣不足，揭示一個需要 40 金幣。';
+            return;
+          }
+
+          const nextWord = boardWords.value.find(word => !foundBoardWordIds.value.includes(word.id));
+          if (!nextWord) {
+            puzzleMessage.value = '本局已完成！請按「換一局」繼續。';
+            return;
+          }
+
+          if (!spendCoins(40)) return;
+
+          const nextFoundIds = foundBoardWordIds.value.concat(nextWord.id);
+          const nextBoard = board.value.map(tile =>
+            tile.wordId === nextWord.id ? { ...tile, cleared: true, hint: false } : tile
+          );
+          const isComplete = nextFoundIds.length === boardWords.value.length;
+
+          foundBoardWordIds.value = nextFoundIds;
+          roundRevealedIds.value = Array.from(new Set(roundRevealedIds.value.concat(nextWord.id)));
+          failedBoardWordIds.value = failedBoardWordIds.value.filter(id => id !== nextWord.id);
+          board.value = nextBoard;
+          adjustMood(-1);
+          persist();
+
+          if (isComplete) {
+            completeActiveRound();
+            puzzleMessage.value = `已揭示：【${nextWord.word}】。揭示的成語不算已掌握；請按「換一局」繼續。`;
+            if (window.confetti) confetti({ particleCount: 45, spread: 60 });
+          } else {
+            puzzleMessage.value = `已揭示：【${nextWord.word}】；尚有 ${boardWords.value.length - nextFoundIds.length} 個答案。揭示不算已掌握。`;
+          }
+        }
+
+        function buyExtraTime() {
+          if (!canBuyTime.value) {
+            puzzleMessage.value = timeHelpNote.value;
+            return;
+          }
+          if (!timerPaused.value) syncRemainingFromDeadline();
+          if (!spendCoins(30)) return;
+          timeBoostUsed.value = true;
+          remainingMs.value += 15000;
+          timerSeconds.value = Math.ceil(remainingMs.value / 1000);
+          if (!timerPaused.value) runTimer();
+          puzzleMessage.value = '已加時 15 秒。';
+        }
+
+        function buyDecoyFade() {
+          if (!canBuyDecoy.value) {
+            puzzleMessage.value = decoyHelpNote.value;
+            return;
+          }
+          if (!spendCoins(15)) return;
+          decoyFadeUsed.value = true;
+          puzzleMessage.value = '已淡化干擾字。真正的成語會比較明顯。';
+        }
+
+        function feedPet() {
+          if (coins.value < 20 || hunger.value >= 5) return;
+          if (!spendCoins(20)) return;
+          hunger.value = clampMeter(hunger.value + 2);
+          feedingAnim.value = true;
+          setTimeout(() => { feedingAnim.value = false; }, 600);
+          const today = todayISO();
+          if (lastFedDate.value !== today) {
+            lastFedDate.value = today;
+            addCareDay();
+          } else {
+            persist();
+          }
+        }
+
+        function viewScenery() {
+          if (coins.value < 20 || mood.value >= 5) return;
+          if (!spendCoins(20)) return;
+          mood.value = clampMeter(mood.value + 1);
+          persist();
+        }
+
+        function buyGoldBorder() {
+          if (goldBorder.value || coins.value < 60) return;
+          if (!spendCoins(60)) return;
+          goldBorder.value = true;
+          persist();
+        }
+
+        function finishSwipe() {
+          if (!swiping.value) return;
+
+          swiping.value = false;
+          const path = [...selected.value];
+          selected.value = [];
+
+          if (path.length !== 4) {
+            if (path.length) puzzleMessage.value = '請連接正好四個相鄰字。';
+            return;
+          }
+
+          const chars = path.map(index => board.value[index]?.char || '').join('');
+          const reversedChars = [...chars].reverse().join('');
+          const match = boardWords.value.find(item =>
+            !foundBoardWordIds.value.includes(item.id) &&
+            (item.word === chars || item.word === reversedChars)
+          );
+
+          if (!match) {
+            onMissOrTimeout();
+            puzzleMessage.value = `❌【${chars}】不是本局尚未找到的山水詞語。`;
+            return;
+          }
+
+          const nextFoundIds = foundBoardWordIds.value.includes(match.id)
+            ? foundBoardWordIds.value
+            : [...foundBoardWordIds.value, match.id];
+          const nextMasteredIds = masteredBoardWordIds.value.includes(match.id)
+            ? masteredBoardWordIds.value
+            : [...masteredBoardWordIds.value, match.id];
+
+          foundBoardWordIds.value = nextFoundIds;
+          masteredBoardWordIds.value = nextMasteredIds;
+          failedBoardWordIds.value = failedBoardWordIds.value.filter(id => id !== match.id);
+          board.value = board.value.map((tile, index) =>
+            path.includes(index) ? { ...tile, cleared: true, hint: false } : tile
+          );
+          const gained = onHonestSuccess();
+
+          const completed = boardWords.value.length > 0 && nextFoundIds.length >= boardWords.value.length;
+          if (completed) {
+            completeActiveRound();
+            selected.value = [];
+            swiping.value = false;
+            puzzleMessage.value = '本局完成！答案包括：' + boardWords.value.map(item => item.word).join('、') + '。請按「換一局」繼續。';
+            if (window.confetti) confetti({ particleCount: 45, spread: 60 });
+          } else {
+            puzzleMessage.value = `連線成功！【${match.word}】 +${gained} 金幣`;
+          }
+        }
+
+        function finishBoardGesture() {
+          if (swiping.value) finishSwipe();
+        }
+
+        onMounted(async () => {
+          loadSave();
+          await fetchRemoteText();
+          await bootClerk();
+          applyOvernightDecay();
+          seenStage.value = Math.max(seenStage.value, petStage.value);
+          document.addEventListener('mouseup', finishBoardGesture);
+          document.addEventListener('pointerup', finishBoardGesture);
+          document.addEventListener('touchend', finishBoardGesture, { passive: true });
+          document.addEventListener('visibilitychange', onVisibilityChange);
+        });
+
+        onBeforeUnmount(() => {
+          document.removeEventListener('mouseup', finishBoardGesture);
+          document.removeEventListener('pointerup', finishBoardGesture);
+          document.removeEventListener('touchend', finishBoardGesture);
+          document.removeEventListener('visibilitychange', onVisibilityChange);
+          stopTimerLoops();
+          stopHungerTick();
+        });
+
+        function onVisibilityChange() {
+          if (document.hidden) pauseTimer();
+          else maybeResumeTimer();
+        }
+
+        watch(activeTab, tab => {
+          if (tab !== 'puzzle') pauseTimer();
+          else maybeResumeTimer();
+          if (tab === 'partner') startHungerTick();
+          else stopHungerTick();
+        });
+
+        function toSimplifiedChinese(text) {
+          const traditionalToSimplified = {
+            '山': '山', '明': '明', '水': '水', '秀': '秀', '青': '青', '綠': '绿',
+            '湖': '湖', '光': '光', '色': '色', '天': '天', '一': '一', '錦': '锦',
+            '繡': '绣', '河': '河', '名': '名', '大': '大', '川': '川', '江': '江',
+            '如': '如', '畫': '画', '煙': '烟', '波': '波', '浩': '浩', '渺': '渺',
+            '粼': '粼', '碧': '碧', '萬': '万', '頃': '顷', '美': '美', '不': '不',
+            '勝': '胜', '收': '收', '別': '别', '有': '有', '洞': '洞', '福': '福',
+            '地': '地', '詩': '诗', '情': '情', '意': '意', '世': '世', '外': '外',
+            '桃': '桃', '源': '源', '令': '令', '人': '人', '神': '神', '往': '往',
+            '引': '引', '入': '入', '語': '语', '說': '说', '話': '话'
+          };
+          return [...text].map(character => traditionalToSimplified[character] || character).join('');
+        }
+
+        function speak(text, language) {
+          if (!('speechSynthesis' in window)) {
+            puzzleMessage.value = '此瀏覽器不支援語音朗讀。';
+            return;
+          }
+
+          window.speechSynthesis.cancel();
+          const voices = window.speechSynthesis.getVoices();
+          const isCantonese = language === 'zh-HK';
+          const spokenText = isCantonese ? text : toSimplifiedChinese(text);
+          const cantoneseVoice = voices.find(voice => {
+            const voiceLanguage = voice.lang.toLowerCase();
+            const voiceName = voice.name.toLowerCase();
+            return voiceLanguage.includes('zh-hk')
+              || voiceLanguage.includes('yue')
+              || voiceName.includes('cantonese')
+              || voiceName.includes('yue');
+          });
+          const isMainlandMandarin = voice => {
+            const voiceLanguage = voice.lang.toLowerCase();
+            return voiceLanguage === 'zh-cn'
+              || voiceLanguage === 'zh-hans-cn'
+              || voiceLanguage.startsWith('zh-cn-');
+          };
+          const isNoveltyMandarin = voice => /eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|xiaoxiao|晓晓/.test(voice.name.toLowerCase());
+          const mandarinVoice = voices.find(voice => {
+            const voiceName = voice.name.toLowerCase();
+            return isMainlandMandarin(voice)
+              && (voiceName.includes('tingting') || voiceName.includes('ting-ting') || voiceName.includes('婷婷'));
+          }) || voices.find(voice => {
+            const voiceName = voice.name.toLowerCase();
+            return isMainlandMandarin(voice)
+              && voiceName.includes('google')
+              && (voiceName.includes('普通话') || voiceName.includes('putonghua') || voiceName.includes('mandarin'));
+          }) || voices.find(voice => isMainlandMandarin(voice) && !isNoveltyMandarin(voice)) || null;
+
+          const utterance = new SpeechSynthesisUtterance(spokenText);
+          utterance.lang = isCantonese ? 'zh-HK' : 'zh-CN';
+          utterance.voice = isCantonese ? (cantoneseVoice || null) : mandarinVoice;
+          utterance.rate = isCantonese ? 0.82 : 0.92;
+          utterance.pitch = 1;
+          utterance.onstart = () => {
+            puzzleMessage.value = isCantonese ? '正在播放廣東話讀音。' : '正在播放普通話讀音。';
+          };
+          utterance.onerror = () => {
+            puzzleMessage.value = '語音播放失敗，請檢查瀏覽器的語音設定。';
+          };
+          window.speechSynthesis.speak(utterance);
+        }
+
+        function startTest() {
+          const sentenceFor = item => `這片景色${item.meaning.replace('。', '')}，令人陶醉。`;
+          const types = [{
+              label: '情境選擇',
+              make: i => ({
+                prompt: `哪個詞語最符合：「${i.clue}」`,
+                options: shuffle([i.word, ...shuffle(bank.filter(x => x.id !== i.id)).slice(0, 3).map(x => x.word)]),
+                answer: i.word
+              })
+            },
+            {
+              label: '釋義選擇',
+              make: i => ({
+                prompt: `「${i.word}」的意思是？`,
+                options: shuffle([i.meaning, ...shuffle(bank.filter(x => x.id !== i.id)).slice(0, 3).map(x => x.meaning)]),
+                answer: i.meaning
+              })
+            },
+            {
+              label: '句子填充',
+              make: i => {
+                const answer = sentenceFor(i);
+                return {
+                  prompt: `「${i.word}」最適合填入哪個句子？`,
+                  options: shuffle([answer, ...shuffle(bank.filter(x => x.id !== i.id)).slice(0, 3).map(sentenceFor)]),
+                  answer
+                };
+              }
+            },
+            {
+              label: '判斷題',
+              make: i => {
+                const isTrue = Math.random() < 0.5;
+                const meaning = isTrue ? i.meaning : shuffle(bank.filter(x => x.id !== i.id))[0].meaning;
+                return {
+                  prompt: `判斷：「${i.word}」可以形容：${meaning}`,
+                  options: shuffle(['正確', '錯誤']),
+                  answer: isTrue ? '正確' : '錯誤'
+                };
+              }
+            }
+          ];
+          const questionCount = Math.min(12, bank.length);
+          const mixedTypes = shuffle(Array.from({ length: questionCount }, (_, i) => types[i % types.length]));
+          testQuestions.value = shuffle(bank).slice(0, questionCount).map((item, index) => ({
+            ...mixedTypes[index].make(item),
+            typeLabel: mixedTypes[index].label,
+            idiomId: item.id,
+            word: item.word,
+            pinyin: item.pinyin,
+            meaning: item.meaning,
+            english: item.english,
+            example: item.example
+          }));
+          testIndex.value = 0;
+          testScore.value = 0;
+          testReview.value = [];
+          testStarted.value = true;
+          testFinished.value = false;
+          quizLocked.value = false;
+          lastAnswerWrong.value = false;
+          quizRetried.value = false;
+          pendingWrongChoice.value = '';
+        }
+
+        function recordQuizAnswer(chosen, correct) {
+          const question = activeQuestion.value;
+          testReview.value = [...testReview.value, {
+            number: testIndex.value + 1,
+            typeLabel: question.typeLabel,
+            prompt: question.prompt,
+            word: question.word,
+            pinyin: question.pinyin,
+            meaning: question.meaning,
+            english: question.english,
+            example: question.example,
+            chosen,
+            answer: question.answer,
+            correct
+          }];
+        }
+
+        function finishOrAdvanceQuiz() {
+          quizLocked.value = false;
+          lastAnswerWrong.value = false;
+          quizRetried.value = false;
+          pendingWrongChoice.value = '';
+          if (testIndex.value + 1 >= testQuestions.value.length) {
+            testFinished.value = true;
+            addCareDay();
+            if (testScore.value === testQuestions.value.length) {
+              coins.value += 50;
+              persist();
+            }
+          } else {
+            testIndex.value++;
+          }
+        }
+
+        function answerTest(chosen) {
+          if (quizLocked.value) return;
+          const question = activeQuestion.value;
+          const correct = chosen === question.answer;
+          if (correct) {
+            testScore.value++;
+            onHonestSuccess(10);
+            recordQuizAnswer(chosen, true);
+            finishOrAdvanceQuiz();
+            return;
+          }
+          pendingWrongChoice.value = chosen;
+          lastAnswerWrong.value = true;
+          quizLocked.value = true;
+        }
+
+        function retryQuiz() {
+          if (!lastAnswerWrong.value || coins.value < 25 || quizRetried.value) return;
+          if (!spendCoins(25)) return;
+          quizRetried.value = true;
+          quizLocked.value = false;
+          lastAnswerWrong.value = false;
+          pendingWrongChoice.value = '';
+        }
+
+        function continueAfterWrong() {
+          if (!lastAnswerWrong.value) return;
+          recordQuizAnswer(pendingWrongChoice.value, false);
+          onMissOrTimeout();
+          finishOrAdvanceQuiz();
+        }
+        return {
+          tabs,
+          activeTab,
+          coins,
+          streak,
+          hunger,
+          mood,
+          petSleeping,
+          goldBorder,
+          careDays,
+          evolving,
+          feedingAnim,
+          clerkReady,
+          signedIn,
+          clerkName,
+          openSignIn,
+          signOut,
+          petStage,
+          petStageLabel,
+          petStatus,
+          bank,
+          masteredBoardWordIds,
+          flashcard,
+          flashcardIndex,
+          flashcardFlipped,
+          nextFlashcard,
+          previousFlashcard,
+          board,
+          gameStarted,
+          startGame,
+          boardSize,
+          boardWords,
+          selected,
+          remainingBoardWords,
+          puzzleMessage,
+          foundBoardWords,
+          foundBoardWordIds,
+          syllabusFoundIds,
+          revealFromButton,
+          revealTitle,
+          buyExtraTime,
+          buyDecoyFade,
+          canBuyTime,
+          canBuyDecoy,
+          timeBoostUsed,
+          decoyFadeUsed,
+          timeHelpNote,
+          decoyHelpNote,
+          feedPet,
+          viewScenery,
+          buyGoldBorder,
+          roundRevealedIds,
+          boardCompleted,
+          timerSeconds,
+          timerText,
+          timerPaused,
+          timeExpired,
+          newBoard,
+          nextBoard,
+          beginSwipe,
+          enterTile,
+          moveTouch,
+          finishSwipe,
+          testStarted,
+          testFinished,
+          testQuestions,
+          testIndex,
+          testScore,
+          testReview,
+          testReviewSorted,
+          activeQuestion,
+          quizLocked,
+          lastAnswerWrong,
+          quizRetried,
+          retryQuiz,
+          continueAfterWrong,
+          setTab,
+          speak,
+          startTest,
+          answerTest
+        };
+      }
+    }).mount('#app');
+
+  </script>
+</body>
+
+</html>
