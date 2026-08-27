@@ -1,0 +1,23 @@
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { ClerkProvider } from '@clerk/nextjs';
+import { zhTW } from '@clerk/localizations';
+import { clerkAppearance } from '@/lib/clerk-appearance';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: '成語探險｜互動成語遊戲',
+  description: '把成語玩成你的新技能。'
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="zh-HK">
+      <body>
+        <ClerkProvider localization={zhTW} appearance={clerkAppearance} afterSignOutUrl="/">
+          {children}
+        </ClerkProvider>
+      </body>
+    </html>
+  );
+}
