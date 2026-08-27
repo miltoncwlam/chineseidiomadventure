@@ -7,8 +7,12 @@ export const clerkAppearance = {
     borderRadius: '1.25rem'
   },
   elements: {
-    card: 'shadow-xl',
-    headerTitle: 'font-black',
-    socialButtonsBlockButton: 'font-bold'
+    rootBox: 'w-full',
+    cardBox: 'w-full',
+    card: 'w-full max-w-none border border-[rgba(23,107,91,0.12)] shadow-lg shadow-[rgba(22,53,47,0.08)]',
+    headerTitle: 'font-black text-left',
+    headerSubtitle: 'text-left',
+    socialButtonsBlockButton: 'font-bold',
+    formButtonPrimary: 'font-black'
   }
 };

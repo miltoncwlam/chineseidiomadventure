@@ -78,40 +78,6 @@ window.closeChineseIdiomSignIn = function closeChineseIdiomSignIn() {
 };
 
 window.openChineseIdiomSignIn = async function openChineseIdiomSignIn() {
-  try {
-    const clerk = (window.__chineseIdiomClerkReady && window.Clerk) || await window.loadChineseIdiomClerk();
-    if (!clerk) throw new Error('Clerk is not configured');
-    if (clerk.user) return true;
-    window.closeChineseIdiomSignIn();
-    const host = document.createElement('div');
-    host.id = 'clerk-host';
-    host.setAttribute('role', 'dialog');
-    host.setAttribute('aria-modal', 'true');
-    host.innerHTML = '<div class="clerk-sheet"><button type="button" class="clerk-close">關閉</button><div id="clerk-panel"><p class="clerk-loading">載入登入中…</p></div></div>';
-    document.body.appendChild(host);
-    host.querySelector('.clerk-close').addEventListener('click', window.closeChineseIdiomSignIn);
-    host.addEventListener('click', function (event) {
-      if (event.target === host) window.closeChineseIdiomSignIn();
-    });
-    await new Promise(function (resolve) { requestAnimationFrame(function () { setTimeout(resolve, 50); }); });
-    clerk.mountSignIn(document.getElementById('clerk-panel'));
-    if (clerk.addListener) {
-      clerk.addListener(function (state) {
-        if (state && state.user) window.closeChineseIdiomSignIn();
-      });
-    }
-    return true;
-  } catch (error) {
-    console.warn('Clerk sign-in could not open.', error);
-    window.closeChineseIdiomSignIn();
-    const host = document.createElement('div');
-    host.id = 'clerk-host';
-    host.innerHTML = '<div class="clerk-sheet"><button type="button" class="clerk-close">關閉</button><p style="padding:1rem;font-weight:700;line-height:1.6;">登入未能載入。請用瀏覽器打開 http://localhost:3002/ 再試一次。</p></div>';
-    document.body.appendChild(host);
-    host.querySelector('.clerk-close').addEventListener('click', window.closeChineseIdiomSignIn);
-    host.addEventListener('click', function (event) {
-      if (event.target === host) window.closeChineseIdiomSignIn();
-    });
-    return false;
-  }
+  window.location.assign('/sign-in');
+  return true;
 };

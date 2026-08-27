@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -68,14 +68,12 @@ export default function HomePage() {
             關於樂園
           </a>
           <SignedOut>
-            <SignInButton mode="redirect">
-              <button
-                type="button"
-                className="rounded-full bg-[var(--color-primary)] px-4 py-2.5 text-sm font-black text-[var(--color-primary-contrast)]"
-              >
-                登入
-              </button>
-            </SignInButton>
+            <Link
+              href="/sign-in"
+              className="rounded-full bg-[var(--color-primary)] px-4 py-2.5 text-sm font-black text-[var(--color-primary-contrast)]"
+            >
+              登入
+            </Link>
           </SignedOut>
           <SignedIn>
             <UserButton />
@@ -106,14 +104,12 @@ export default function HomePage() {
                 以訪客進入遊戲
               </Link>
               <SignedOut>
-                <SignInButton mode="redirect">
-                  <button
-                    type="button"
-                    className="rounded-[var(--radius)] border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
-                  >
-                    登入同步進度
-                  </button>
-                </SignInButton>
+                <Link
+                  href="/sign-in"
+                  className="rounded-[var(--radius)] border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
+                >
+                  登入同步進度
+                </Link>
               </SignedOut>
               <SignedIn>
                 <Link

@@ -1,2 +1,9 @@
 @import 'tailwindcss';
 @import '../theme.css';
+
+.auth-clerk-shell .cl-rootBox,
+.auth-clerk-shell .cl-cardBox,
+.auth-clerk-shell .cl-card {
+  width: 100%;
+  max-width: none;
+}
