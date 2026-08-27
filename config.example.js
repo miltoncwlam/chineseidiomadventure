@@ -1,4 +1,4 @@
-window.CHENG_YU = {
+window.CHINESE_IDIOM_ADVENTURE = {
   supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
   supabasePublishableKey: 'sb_publishable_REPLACE_ME',
   clerkPublishableKey: 'pk_test_REPLACE_ME'

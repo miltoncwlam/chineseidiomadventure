@@ -1,4 +1,4 @@
-window.CHENG_YU = {
+window.CHINESE_IDIOM_ADVENTURE = {
   supabaseUrl: 'https://ngukhgymeveuttokeavp.supabase.co',
   supabasePublishableKey: 'sb_publishable_0bY4LAevhSVPjB9t6tcYhw_ZjuEk5vm',
   clerkPublishableKey: 'pk_test_ZWFnZXItY2hpbXAtNTg5NS5jbGVyay5hY2NvdW50cy5kZXYk'
@@ -10,10 +10,10 @@ window.CHENG_YU = {
 // clerkPublishableKey    → Clerk Dashboard → pk_test_… or pk_live_… (optional)
 // Placeholders are ignored; the game still runs with local text and localStorage.
 
-window.loadChengYuClerk = async function loadChengYuClerk() {
-  const key = String((window.CHENG_YU && window.CHENG_YU.clerkPublishableKey) || '').trim();
+window.loadChineseIdiomClerk = async function loadChineseIdiomClerk() {
+  const key = String((window.CHINESE_IDIOM_ADVENTURE && window.CHINESE_IDIOM_ADVENTURE.clerkPublishableKey) || '').trim();
   if (!key || key.includes('REPLACE') || !key.startsWith('pk_')) return null;
-  if (window.__chengYuClerkReady && window.Clerk && window.Clerk.load) return window.Clerk;
+  if (window.__chineseIdiomClerkReady && window.Clerk && window.Clerk.load) return window.Clerk;
 
   let domain = '';
   try {
@@ -25,9 +25,9 @@ window.loadChengYuClerk = async function loadChengYuClerk() {
 
   function loadScript(src, attrs) {
     return new Promise(function (resolve, reject) {
-      const found = document.querySelector('script[data-chengyu-src="' + src + '"]');
+      const found = document.querySelector('script[data-cia-src="' + src + '"]');
       if (found) {
-        if (found.dataset.chengyuLoaded === '1') return resolve();
+        if (found.dataset.ciaLoaded === '1') return resolve();
         found.addEventListener('load', resolve);
         found.addEventListener('error', function () { reject(new Error('Failed to load Clerk script')); });
         return;
@@ -36,9 +36,9 @@ window.loadChengYuClerk = async function loadChengYuClerk() {
       script.src = src;
       script.async = true;
       script.crossOrigin = 'anonymous';
-      script.setAttribute('data-chengyu-src', src);
+      script.setAttribute('data-cia-src', src);
       if (attrs) Object.keys(attrs).forEach(function (name) { script.setAttribute(name, attrs[name]); });
-      script.onload = function () { script.dataset.chengyuLoaded = '1'; resolve(); };
+      script.onload = function () { script.dataset.ciaLoaded = '1'; resolve(); };
       script.onerror = function () { reject(new Error('Failed to load Clerk script')); };
       document.head.appendChild(script);
     });
@@ -58,18 +58,17 @@ window.loadChengYuClerk = async function loadChengYuClerk() {
       location.origin,
       'http://localhost:3002',
       'http://127.0.0.1:3002',
-      'https://chineseidiom.oneapp.dev',
-      'https://chengyu-tansuo.vercel.app'
+      'https://chineseidiom.vercel.app'
     ]
   };
   if (window.__internal_ClerkUICtor) options.ui = { ClerkUI: window.__internal_ClerkUICtor };
   await clerk.load(options);
   window.Clerk = clerk;
-  window.__chengYuClerkReady = true;
+  window.__chineseIdiomClerkReady = true;
   return clerk;
 };
 
-window.closeChengYuSignIn = function closeChengYuSignIn() {
+window.closeChineseIdiomSignIn = function closeChineseIdiomSignIn() {
   const host = document.getElementById('clerk-host');
   const panel = document.getElementById('clerk-panel');
   if (window.Clerk && panel && typeof window.Clerk.unmountSignIn === 'function') {
@@ -78,40 +77,40 @@ window.closeChengYuSignIn = function closeChengYuSignIn() {
   if (host) host.remove();
 };
 
-window.openChengYuSignIn = async function openChengYuSignIn() {
+window.openChineseIdiomSignIn = async function openChineseIdiomSignIn() {
   try {
-    const clerk = (window.__chengYuClerkReady && window.Clerk) || await window.loadChengYuClerk();
+    const clerk = (window.__chineseIdiomClerkReady && window.Clerk) || await window.loadChineseIdiomClerk();
     if (!clerk) throw new Error('Clerk is not configured');
     if (clerk.user) return true;
-    window.closeChengYuSignIn();
+    window.closeChineseIdiomSignIn();
     const host = document.createElement('div');
     host.id = 'clerk-host';
     host.setAttribute('role', 'dialog');
     host.setAttribute('aria-modal', 'true');
     host.innerHTML = '<div class="clerk-sheet"><button type="button" class="clerk-close">關閉</button><div id="clerk-panel"><p class="clerk-loading">載入登入中…</p></div></div>';
     document.body.appendChild(host);
-    host.querySelector('.clerk-close').addEventListener('click', window.closeChengYuSignIn);
+    host.querySelector('.clerk-close').addEventListener('click', window.closeChineseIdiomSignIn);
     host.addEventListener('click', function (event) {
-      if (event.target === host) window.closeChengYuSignIn();
+      if (event.target === host) window.closeChineseIdiomSignIn();
     });
     await new Promise(function (resolve) { requestAnimationFrame(function () { setTimeout(resolve, 50); }); });
     clerk.mountSignIn(document.getElementById('clerk-panel'));
     if (clerk.addListener) {
       clerk.addListener(function (state) {
-        if (state && state.user) window.closeChengYuSignIn();
+        if (state && state.user) window.closeChineseIdiomSignIn();
       });
     }
     return true;
   } catch (error) {
     console.warn('Clerk sign-in could not open.', error);
-    window.closeChengYuSignIn();
+    window.closeChineseIdiomSignIn();
     const host = document.createElement('div');
     host.id = 'clerk-host';
     host.innerHTML = '<div class="clerk-sheet"><button type="button" class="clerk-close">關閉</button><p style="padding:1rem;font-weight:700;line-height:1.6;">登入未能載入。請用瀏覽器打開 http://localhost:3002/ 再試一次。</p></div>';
     document.body.appendChild(host);
-    host.querySelector('.clerk-close').addEventListener('click', window.closeChengYuSignIn);
+    host.querySelector('.clerk-close').addEventListener('click', window.closeChineseIdiomSignIn);
     host.addEventListener('click', function (event) {
-      if (event.target === host) window.closeChengYuSignIn();
+      if (event.target === host) window.closeChineseIdiomSignIn();
     });
     return false;
   }

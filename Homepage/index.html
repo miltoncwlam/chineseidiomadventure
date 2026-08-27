@@ -130,7 +130,7 @@
   </div>
   <script>
     (function () {
-      const cfg = window.CHENG_YU || {};
+      const cfg = window.CHINESE_IDIOM_ADVENTURE || {};
       const btn = document.getElementById('auth-btn');
       function applyCopy(rows) {
         const map = {};
@@ -163,21 +163,21 @@
         };
         const onAuthClick = async () => {
           try {
-            const clerk = await window.loadChengYuClerk();
+            const clerk = await window.loadChineseIdiomClerk();
             if (clerk && clerk.user) {
               await clerk.signOut();
               paint();
               return;
             }
-            await window.openChengYuSignIn();
+            await window.openChineseIdiomSignIn();
             paint();
           } catch (error) {
-            await window.openChengYuSignIn();
+            await window.openChineseIdiomSignIn();
           }
         };
         buttons.forEach((el) => { el.onclick = onAuthClick; });
         try {
-          const clerk = await window.loadChengYuClerk();
+          const clerk = await window.loadChineseIdiomClerk();
           if (!clerk) return;
           paint();
           if (window.Clerk.addListener) window.Clerk.addListener(paint);

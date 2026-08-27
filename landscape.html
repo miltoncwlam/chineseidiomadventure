@@ -693,7 +693,7 @@
         }
 
         function getConfig() {
-          return window.CHENG_YU || {};
+          return window.CHINESE_IDIOM_ADVENTURE || {};
         }
 
         function getSupabase() {
@@ -777,7 +777,7 @@
 
         async function bootClerk() {
           try {
-            const clerk = await window.loadChengYuClerk();
+            const clerk = await window.loadChineseIdiomClerk();
             if (!clerk) {
               clerkReady.value = false;
               return;
@@ -804,7 +804,7 @@
         }
 
         async function openSignIn() {
-          await window.openChengYuSignIn();
+          await window.openChineseIdiomSignIn();
         }
 
         async function signOut() {
