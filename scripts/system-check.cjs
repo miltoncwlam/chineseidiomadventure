@@ -80,9 +80,10 @@ assert(
 assert('legacy Homepage hub is gone', !fs.existsSync(path.join(root, 'Homepage', 'index.html')));
 assert('layout forces path sign-in', fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8').includes('signInUrl="/sign-in"'));
 assert(
-  'clerk frontend API is proxied on-origin',
+  'clerk frontend API is proxied on-origin for live keys',
   fs.existsSync(path.join(root, 'app/api/clerk')) &&
-    fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8').includes("proxyUrl={process.env.NEXT_PUBLIC_CLERK_PROXY_URL || '/api/clerk'}")
+    fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8').includes("https://chineseidiom.vercel.app/__clerk") &&
+    fs.readFileSync(path.join(root, 'next.config.ts'), 'utf8').includes("source: '/__clerk/:path*'")
 );
 assert('remote idioms merge by id', game.includes('bank.find((item) => item.id === row.id)'));
 assert('all-mastered boards still pick words', game.includes('const pool = unmastered.length ? unmastered : shuffle([...bank])'));

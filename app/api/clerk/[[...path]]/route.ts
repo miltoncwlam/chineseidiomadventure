@@ -29,7 +29,11 @@ async function proxyToClerk(request: NextRequest) {
     if (lower === 'host' || lower === 'connection' || lower === 'content-length') return;
     headers.set(key, value);
   });
-  headers.set('Clerk-Proxy-Url', `${origin}${PROXY_PATH}`);
+  const registeredProxy = process.env.NEXT_PUBLIC_CLERK_PROXY_URL?.trim();
+  headers.set(
+    'Clerk-Proxy-Url',
+    registeredProxy && /^https?:\/\//.test(registeredProxy) ? registeredProxy : `${origin}/__clerk`
+  );
   headers.set('Clerk-Secret-Key', secret);
   headers.set('X-Forwarded-For', clientIp);
 

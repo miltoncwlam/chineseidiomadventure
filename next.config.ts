@@ -9,7 +9,11 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [{ source: '/landscape', destination: '/landscape.html' }];
+    return [
+      { source: '/landscape', destination: '/landscape.html' },
+      { source: '/__clerk', destination: '/api/clerk' },
+      { source: '/__clerk/:path*', destination: '/api/clerk/:path*' }
+    ];
   }
 };
 
