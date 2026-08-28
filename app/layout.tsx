@@ -17,6 +17,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ClerkProvider
           localization={zhTW}
           appearance={clerkAppearance}
+          publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+          proxyUrl={process.env.NEXT_PUBLIC_CLERK_PROXY_URL || '/api/clerk'}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
           signInFallbackRedirectUrl="/"

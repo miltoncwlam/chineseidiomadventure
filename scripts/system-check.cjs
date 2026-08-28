@@ -79,6 +79,11 @@ assert(
 );
 assert('legacy Homepage hub is gone', !fs.existsSync(path.join(root, 'Homepage', 'index.html')));
 assert('layout forces path sign-in', fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8').includes('signInUrl="/sign-in"'));
+assert(
+  'clerk frontend API is proxied on-origin',
+  fs.existsSync(path.join(root, 'app/api/clerk')) &&
+    fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8').includes("proxyUrl={process.env.NEXT_PUBLIC_CLERK_PROXY_URL || '/api/clerk'}")
+);
 assert('remote idioms merge by id', game.includes('bank.find((item) => item.id === row.id)'));
 assert('all-mastered boards still pick words', game.includes('const pool = unmastered.length ? unmastered : shuffle([...bank])'));
 assert('swipes require matching wordId', game.includes('pathWordIds.every(id => id === wordId)'));
