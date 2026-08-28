@@ -14,7 +14,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-HK">
       <body>
-        <ClerkProvider localization={zhTW} appearance={clerkAppearance} afterSignOutUrl="/">
+        <ClerkProvider
+          localization={zhTW}
+          appearance={clerkAppearance}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+          signInFallbackRedirectUrl="/"
+          signUpFallbackRedirectUrl="/"
+          afterSignOutUrl="/"
+        >
           {children}
         </ClerkProvider>
       </body>

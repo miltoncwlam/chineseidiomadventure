@@ -64,48 +64,6 @@ body {
   border: 1px solid color-mix(in srgb, var(--color-muted) 24%, transparent);
 }
 
-#clerk-host {
-  position: fixed;
-  inset: 0;
-  z-index: 2147483000;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgba(22, 53, 47, 0.55);
-}
-
-#clerk-host .clerk-sheet {
-  width: min(420px, 100%);
-  max-height: min(92dvh, 720px);
-  overflow: auto;
-  background: #fff;
-  border-radius: 1.25rem;
-  padding: 0.75rem 0.75rem 1rem;
-  box-shadow: 0 1.5rem 4rem rgba(22, 53, 47, 0.22);
-}
-
-#clerk-host .clerk-close {
-  display: block;
-  margin: 0 0 0.5rem auto;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-weight: 800;
-  color: var(--color-muted);
-  cursor: pointer;
-}
-
-#clerk-panel {
-  min-height: 280px;
-}
-
-#clerk-panel .clerk-loading {
-  margin: 2rem 0;
-  text-align: center;
-  font-weight: 800;
-  color: var(--color-muted);
-}
-
 .hud-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

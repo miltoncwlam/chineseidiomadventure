@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { UserButton, useUser } from '@clerk/nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -21,6 +21,7 @@ const defaultCopy: Copy = {
 
 export default function HomePage() {
   const [copy, setCopy] = useState<Copy>(defaultCopy);
+  const { isSignedIn } = useUser();
 
   useEffect(() => {
     const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
@@ -67,17 +68,16 @@ export default function HomePage() {
           <a href="#about" className="hidden transition hover:text-[var(--color-primary)] sm:inline">
             關於樂園
           </a>
-          <SignedOut>
+          {isSignedIn ? (
+            <UserButton />
+          ) : (
             <Link
               href="/sign-in"
               className="rounded-full bg-[var(--color-primary)] px-4 py-2.5 text-sm font-black text-[var(--color-primary-contrast)]"
             >
               登入
             </Link>
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          )}
         </nav>
       </header>
 
@@ -103,22 +103,21 @@ export default function HomePage() {
               >
                 以訪客進入遊戲
               </Link>
-              <SignedOut>
+              {!isSignedIn ? (
                 <Link
                   href="/sign-in"
                   className="rounded-[var(--radius)] border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
                 >
                   登入同步進度
                 </Link>
-              </SignedOut>
-              <SignedIn>
+              ) : (
                 <Link
                   href="/landscape"
                   className="rounded-[var(--radius)] border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
                 >
                   已登入，進入遊戲
                 </Link>
-              </SignedIn>
+              )}
             </div>
             <p className="mt-3 text-xs font-bold text-[var(--color-muted)]">不必登入也可以玩。登入後才會把進度存到雲端。</p>
           </div>

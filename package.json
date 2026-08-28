@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "next dev -p 3002",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node scripts/system-check.cjs"
   },
   "dependencies": {
     "@clerk/localizations": "^3.27.0",

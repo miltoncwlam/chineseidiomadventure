@@ -580,6 +580,7 @@
           return '花費 40 金幣揭示一個答案；揭示不算已掌握';
         });
         const timeHelpNote = computed(() => {
+          if (examInProgress.value) return '測驗進行中不能使用金幣。';
           if (!gameStarted.value || boardCompleted.value || timeExpired.value) return '請先開始一局連消。';
           if (timeBoostUsed.value) return '本局已經加過時。';
           if (coins.value < 30) return '金幣不足。';
@@ -767,7 +768,7 @@
             if (!client) return;
             const { data } = await client.from('idioms').select('*').order('sort_order');
             if (!data || !data.length) return;
-            data.forEach((row, index) => {
+            data.forEach((row) => {
               const next = {
                 id: row.id,
                 word: row.word,
@@ -779,7 +780,8 @@
                 synonyms: row.synonyms || [],
                 antonyms: row.antonyms || []
               };
-              if (bank[index]) Object.assign(bank[index], next);
+              const existing = bank.find((item) => item.id === row.id);
+              if (existing) Object.assign(existing, next);
               else bank.push(next);
             });
           } catch (error) { /* keep in-page bank */ }
@@ -814,7 +816,7 @@
         }
 
         async function openSignIn() {
-          await window.openChineseIdiomSignIn();
+          window.location.assign('/sign-in');
         }
 
         async function signOut() {
@@ -1041,8 +1043,9 @@
           ]);
           const missedWords = bank.filter(item => failedBoardWordIds.value.includes(item.id) && !masteredBoardWordIds.value.includes(item.id));
           const freshWords = shuffle(bank.filter(item => !failedBoardWordIds.value.includes(item.id) && !masteredBoardWordIds.value.includes(item.id)));
-          const availableWords = [...shuffle(missedWords), ...freshWords];
-          const words = (availableWords.length >= wordCount ? availableWords : shuffle(bank.filter(item => !masteredBoardWordIds.value.includes(item.id)))).slice(0, wordCount);
+          const unmastered = [...shuffle(missedWords), ...freshWords];
+          const pool = unmastered.length ? unmastered : shuffle([...bank]);
+          const words = pool.slice(0, wordCount);
           const placements = [];
 
           // Build every legal placement, shuffle them, then take the first
@@ -1146,6 +1149,10 @@
 
         function revealFromButton() {
           resetBoardSelection();
+          if (examInProgress.value) {
+            puzzleMessage.value = '測驗進行中不能使用金幣。';
+            return;
+          }
 
           if (timeExpired.value) {
             puzzleMessage.value = '本局時間已結束，請按「換一局」繼續。';
@@ -1262,10 +1269,16 @@
 
           const chars = path.map(index => board.value[index]?.char || '').join('');
           const reversedChars = [...chars].reverse().join('');
-          const match = boardWords.value.find(item =>
-            !foundBoardWordIds.value.includes(item.id) &&
-            (item.word === chars || item.word === reversedChars)
-          );
+          const pathWordIds = path.map(index => board.value[index]?.wordId);
+          const wordId = pathWordIds[0];
+          const aligned = Boolean(wordId) && pathWordIds.every(id => id === wordId);
+          const match = aligned
+            ? boardWords.value.find(item =>
+                !foundBoardWordIds.value.includes(item.id) &&
+                item.id === wordId &&
+                (item.word === chars || item.word === reversedChars)
+              )
+            : null;
 
           if (!match) {
             onMissOrTimeout();

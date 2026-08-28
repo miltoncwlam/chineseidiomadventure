@@ -7,3 +7,8 @@
   width: 100%;
   max-width: none;
 }
+
+.auth-clerk-shell .cl-header,
+.auth-clerk-shell .cl-logoBox {
+  display: none;
+}

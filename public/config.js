@@ -44,7 +44,6 @@ window.loadChineseIdiomClerk = async function loadChineseIdiomClerk() {
     });
   }
 
-  await loadScript('https://' + domain + '/npm/@clerk/ui@1/dist/ui.browser.js');
   await loadScript('https://' + domain + '/npm/@clerk/clerk-js@5/dist/clerk.browser.js', {
     'data-clerk-publishable-key': key
   });
@@ -52,7 +51,7 @@ window.loadChineseIdiomClerk = async function loadChineseIdiomClerk() {
   const ClerkCtor = window.Clerk;
   const clerk = typeof ClerkCtor === 'function' ? new ClerkCtor(key) : ClerkCtor;
   if (!clerk || typeof clerk.load !== 'function') throw new Error('Clerk SDK did not initialize');
-  const options = {
+  await clerk.load({
     publishableKey: key,
     allowedRedirectOrigins: [
       location.origin,
@@ -60,21 +59,10 @@ window.loadChineseIdiomClerk = async function loadChineseIdiomClerk() {
       'http://127.0.0.1:3002',
       'https://chineseidiom.vercel.app'
     ]
-  };
-  if (window.__internal_ClerkUICtor) options.ui = { ClerkUI: window.__internal_ClerkUICtor };
-  await clerk.load(options);
+  });
   window.Clerk = clerk;
   window.__chineseIdiomClerkReady = true;
   return clerk;
-};
-
-window.closeChineseIdiomSignIn = function closeChineseIdiomSignIn() {
-  const host = document.getElementById('clerk-host');
-  const panel = document.getElementById('clerk-panel');
-  if (window.Clerk && panel && typeof window.Clerk.unmountSignIn === 'function') {
-    try { window.Clerk.unmountSignIn(panel); } catch (error) { /* ignore */ }
-  }
-  if (host) host.remove();
 };
 
 window.openChineseIdiomSignIn = async function openChineseIdiomSignIn() {
