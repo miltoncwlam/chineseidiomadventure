@@ -1,8 +1,8 @@
 export const clerkAppearance = {
   layout: {
-    logoPlacement: 'none',
-    socialButtonsPlacement: 'top',
-    socialButtonsVariant: 'blockButton'
+    logoPlacement: 'none' as const,
+    socialButtonsPlacement: 'top' as const,
+    socialButtonsVariant: 'blockButton' as const
   },
   variables: {
     colorPrimary: '#176b5b',
