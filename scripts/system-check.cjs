@@ -52,6 +52,7 @@ const signIn = fs.readFileSync(path.join(root, 'app/sign-in/[[...sign-in]]/page.
 const privacy = fs.readFileSync(path.join(root, 'app/privacy/page.tsx'), 'utf8');
 const terms = fs.readFileSync(path.join(root, 'app/terms/page.tsx'), 'utf8');
 const config = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
+const clerkProxy = fs.readFileSync(path.join(root, 'app/api/clerk/[[...path]]/route.ts'), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 const start = game.lastIndexOf('<script>');
@@ -83,7 +84,8 @@ assert(
   'clerk frontend API is proxied on-origin for live keys',
   fs.existsSync(path.join(root, 'app/api/clerk')) &&
     fs.readFileSync(path.join(root, 'app/layout.tsx'), 'utf8').includes("https://chineseidiom.vercel.app/__clerk") &&
-    fs.readFileSync(path.join(root, 'next.config.ts'), 'utf8').includes("source: '/__clerk/:path*'")
+    fs.readFileSync(path.join(root, 'next.config.ts'), 'utf8').includes("source: '/__clerk/:path*'") &&
+    clerkProxy.includes("const PROXY_PATHS = ['/__clerk', '/api/clerk']")
 );
 assert('remote idioms merge by id', game.includes('bank.find((item) => item.id === row.id)'));
 assert('all-mastered boards still pick words', game.includes('const pool = unmastered.length ? unmastered : shuffle([...bank])'));

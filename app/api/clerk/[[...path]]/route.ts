@@ -3,7 +3,14 @@ import { type NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
 const FAPI_ORIGIN = 'https://frontend-api.clerk.dev';
-const PROXY_PATH = '/api/clerk';
+const PROXY_PATHS = ['/__clerk', '/api/clerk'];
+
+function stripProxyPath(pathname: string) {
+  const prefix = PROXY_PATHS.find(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+  return prefix ? pathname.slice(prefix.length) || '/' : pathname;
+}
 
 async function proxyToClerk(request: NextRequest) {
   const secret = process.env.CLERK_SECRET_KEY?.trim() || '';
@@ -12,9 +19,7 @@ async function proxyToClerk(request: NextRequest) {
   }
 
   const incoming = new URL(request.url);
-  const suffix = incoming.pathname.startsWith(PROXY_PATH)
-    ? incoming.pathname.slice(PROXY_PATH.length) || '/'
-    : incoming.pathname;
+  const suffix = stripProxyPath(incoming.pathname);
   const target = new URL(suffix + incoming.search, FAPI_ORIGIN);
   const origin = incoming.origin;
   const clientIp =
