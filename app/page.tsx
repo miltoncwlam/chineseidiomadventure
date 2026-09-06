@@ -71,12 +71,20 @@ export default function HomePage() {
           {isSignedIn ? (
             <UserButton />
           ) : (
-            <Link
-              href="/sign-in"
-              className="rounded-full bg-[var(--color-primary)] px-4 py-2.5 text-sm font-black text-[var(--color-primary-contrast)]"
-            >
-              登入
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/sign-up"
+                className="rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-4 py-2 text-sm font-black text-[var(--color-primary)]"
+              >
+                註冊
+              </Link>
+              <Link
+                href="/sign-in"
+                className="rounded-full bg-[var(--color-primary)] px-4 py-2.5 text-sm font-black text-[var(--color-primary-contrast)]"
+              >
+                登入
+              </Link>
+            </div>
           )}
         </nav>
       </header>
@@ -104,12 +112,20 @@ export default function HomePage() {
                 以訪客進入遊戲
               </Link>
               {!isSignedIn ? (
-                <Link
-                  href="/sign-in"
-                  className="rounded-[var(--radius)] border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
-                >
-                  登入同步進度
-                </Link>
+                <>
+                  <Link
+                    href="/sign-in"
+                    className="rounded-[var(--radius)] border-2 border-[var(--color-primary)] bg-[var(--color-surface)] px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
+                  >
+                    登入同步進度
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="rounded-[var(--radius)] border-2 border-[var(--color-primary)]/40 bg-transparent px-5 py-3.5 text-center text-sm font-black text-[var(--color-primary)] sm:px-6 sm:text-base"
+                  >
+                    註冊
+                  </Link>
+                </>
               ) : (
                 <Link
                   href="/landscape"

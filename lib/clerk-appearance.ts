@@ -20,6 +20,8 @@ export const clerkAppearance = {
     headerTitle: { display: 'none' },
     headerSubtitle: { display: 'none' },
     socialButtonsBlockButton: 'font-bold',
-    formButtonPrimary: 'font-black'
+    formButtonPrimary: 'font-black',
+    footerAction: 'text-sm font-bold',
+    footerActionLink: 'text-base font-black'
   }
 };

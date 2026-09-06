@@ -3,7 +3,12 @@ import { SignInPanel } from '@/components/sign-in-panel';
 
 export default function SignInPage() {
   return (
-    <AuthScreen title="登入同步進度" subtitle="登入後，小山靈與遊戲進度會儲存在雲端，方便你換裝置繼續玩。">
+    <AuthScreen
+      title="登入同步進度"
+      subtitle="登入後，小山靈與遊戲進度會儲存在雲端，方便你換裝置繼續玩。"
+      switchHref="/sign-up"
+      switchLabel="還沒有帳戶？註冊"
+    >
       <SignInPanel />
     </AuthScreen>
   );

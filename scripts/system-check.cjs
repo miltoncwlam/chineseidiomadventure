@@ -65,8 +65,14 @@ assert('game script parses', syntax.status === 0, syntax.stderr);
 
 assert('public landscape.html stays in sync', game === pubGame);
 assert('dev server is port 3002', pkg.scripts.dev.includes('-p 3002'));
-assert('homepage uses /sign-in link, not modal', home.includes('href="/sign-in"') && !home.includes('SignInButton') && home.includes('useUser'));
-assert('sign-in page is full-screen AuthScreen', signIn.includes('AuthScreen') && signIn.includes('SignInPanel'));
+assert(
+  'homepage uses /sign-in and /sign-up links, not modal',
+  home.includes('href="/sign-in"') && home.includes('href="/sign-up"') && !home.includes('SignInButton') && home.includes('useUser')
+);
+assert(
+  'sign-in page is full-screen AuthScreen',
+  signIn.includes('AuthScreen') && signIn.includes('SignInPanel') && signIn.includes('switchHref="/sign-up"')
+);
 assert('privacy and terms pages exist', privacy.includes('私隱政策') && terms.includes('服務條款'));
 assert('no exam retry shop', !game.includes('測驗重答') && game.includes('測驗進行中不能使用金幣'));
 assert('decoy fade costs 40', game.includes('去干擾 · 40') && !game.includes('去干擾 · 15'));
